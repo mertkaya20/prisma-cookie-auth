@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:17-alpine
+    # Sadece local geliştirme için; gizli bilgi değildir.
+    environment:
+      POSTGRES_USER: taskapp
+      POSTGRES_PASSWORD: taskapp
+      POSTGRES_DB: taskapp
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
