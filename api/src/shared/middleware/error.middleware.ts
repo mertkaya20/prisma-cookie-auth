@@ -26,7 +26,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     });
     return;
   }
-  if (err.expose && typeof err.status === "number") {
+  if (
+    err.expose === true &&
+    typeof err.status === "number" &&
+    err.status >= 400 &&
+    err.status < 500
+  ) {
     res.status(err.status).json({
       error: {
         code: "BAD_REQUEST",
