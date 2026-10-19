@@ -19,6 +19,10 @@ const userSelect = {
 } as const;
 
 const BCRYPT_COST = 12;
+
+export const hashPassword = (password: string) =>
+  bcrypt.hash(password, BCRYPT_COST);
+
 const DUMMY_HASH =
   "$2b$12$LQSavXPKB8QsRlH3Wkaiwe8glnqB37iqSFLluRfz3vXZqoY4VD9la";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -52,7 +56,7 @@ const createSession = async (userId: string) => {
 };
 
 export const register = async (input: RegisterInput) => {
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
+  const passwordHash = await hashPassword(input.password);
 
   let user;
   try {
