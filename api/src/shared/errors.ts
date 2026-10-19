@@ -22,3 +22,10 @@ export class NotFoundError extends AppError {
     this.name = "NotFoundError";
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor() {
+    super(403, "FORBIDDEN", "Insufficient permissions");
+    this.name = "ForbiddenError";
+  }
+}

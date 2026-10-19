@@ -5,6 +5,7 @@ import {
   notFoundHandler,
 } from "./shared/middleware/error.middleware.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { usersRouter } from "./modules/users/users.routes.js";
 
 export const server = express();
 
@@ -16,6 +17,7 @@ server.get("/health", (_req, res) => {
 });
 
 server.use("/auth", authRouter);
+server.use("/users", usersRouter);
 
 server.use(notFoundHandler);
 server.use(errorHandler);
