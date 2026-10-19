@@ -29,6 +29,17 @@ export const login: RequestHandler = async (req, res) => {
   res.json({ user });
 };
 
+export const logout: RequestHandler = async (req, res) => {
+  const token = req.cookies[SESSION_COOKIE];
+
+  if (typeof token === "string") {
+    await authService.logout(token);
+  }
+
+  res.clearCookie(SESSION_COOKIE, cookieOptions);
+  res.status(204).end();
+};
+
 export const me: RequestHandler = (req, res) => {
   res.json({ user: req.user });
 };

@@ -106,6 +106,16 @@ export const login = async (input: LoginInput) => {
   };
 };
 
+export const logout = async (token: string) => {
+  const hashedToken = hashToken(token);
+
+  await db.session.deleteMany({
+    where: { id: hashedToken },
+  });
+
+  return;
+};
+
 export const getSessionUser = async (token: string) => {
   const hashedToken = hashToken(token);
 
