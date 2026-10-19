@@ -10,7 +10,7 @@ type RegisterInput = z.infer<typeof registerSchema>;
 
 type LoginInput = z.infer<typeof loginSchema>;
 
-const userSelect = {
+export const userSelect = {
   id: true,
   email: true,
   name: true,
