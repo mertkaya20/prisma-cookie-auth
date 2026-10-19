@@ -5,7 +5,6 @@ import { z } from "zod";
 import { Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../../shared/errors.js";
 import { createHash, randomBytes } from "node:crypto";
-import { Return } from "@prisma/client/runtime/client";
 
 type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -24,14 +23,40 @@ const DUMMY_HASH =
   "$2b$12$LQSavXPKB8QsRlH3Wkaiwe8glnqB37iqSFLluRfz3vXZqoY4VD9la";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+type PublicUserFields = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+
+const toPublicUser = (user: PublicUserFields) => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  role: user.role,
+  organizationId: user.organizationId,
+});
+
 const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
+
+// Token'ın kendisi cookie'ye gider, veritabanına sadece hash'i yazılır.
+const createSession = async (userId: string) => {
+  const token = randomBytes(32).toString("base64url");
+
+  await db.session.create({
+    data: {
+      id: hashToken(token),
+      userId,
+      expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+    },
+  });
+
+  return token;
+};
 
 export const register = async (input: RegisterInput) => {
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
 
+  let user;
   try {
-    const user = await db.user.create({
+    user = await db.user.create({
       data: {
         email: input.email,
         name: input.name,
@@ -45,7 +70,6 @@ export const register = async (input: RegisterInput) => {
       },
       select: userSelect,
     });
-    return user;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -55,6 +79,11 @@ export const register = async (input: RegisterInput) => {
     }
     throw error;
   }
+
+  // Kayıt olan kullanıcı ayrıca login olmadan giriş yapmış sayılır.
+  const token = await createSession(user.id);
+
+  return { token, user };
 };
 
 export const login = async (input: LoginInput) => {
@@ -84,25 +113,11 @@ export const login = async (input: LoginInput) => {
     );
   }
 
-  const token = randomBytes(32).toString("base64url");
-
-  await db.session.create({
-    data: {
-      id: hashToken(token),
-      userId: user.id,
-      expiresAt: new Date(Date.now() + SESSION_TTL_MS),
-    },
-  });
+  const token = await createSession(user.id);
 
   return {
     token,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      organizationId: user.organizationId,
-    },
+    user: toPublicUser(user),
   };
 };
 
@@ -139,15 +154,7 @@ export const getSessionUser = async (token: string) => {
 
   if (session.user.organization.status === "suspended") return null;
 
-  return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role,
-    organizationId: session.user.organizationId,
-  };
+  return toPublicUser(session.user);
 };
 
-export type SessionUser = NonNullable<
-  Awaited<ReturnType<typeof getSessionUser>>
->;
+export type SessionUser = ReturnType<typeof toPublicUser>;

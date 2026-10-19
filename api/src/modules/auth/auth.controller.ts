@@ -1,4 +1,4 @@
-import type { CookieOptions, RequestHandler } from "express";
+import type { CookieOptions, RequestHandler, Response } from "express";
 import { loginSchema, registerSchema } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { config } from "../../shared/config.js";
@@ -11,21 +11,26 @@ const cookieOptions: CookieOptions = {
   path: "/",
 };
 
+const setSessionCookie = (res: Response, token: string) => {
+  res.cookie(SESSION_COOKIE, token, {
+    ...cookieOptions,
+    maxAge: authService.SESSION_TTL_MS,
+  });
+};
+
 export const register: RequestHandler = async (req, res) => {
   const parsedData = registerSchema.parse(req.body);
-  const createdUser = await authService.register(parsedData);
+  const { token, user } = await authService.register(parsedData);
 
-  res.status(201).json({ user: createdUser });
+  setSessionCookie(res, token);
+  res.status(201).json({ user });
 };
 
 export const login: RequestHandler = async (req, res) => {
   const parsedData = loginSchema.parse(req.body);
   const { token, user } = await authService.login(parsedData);
 
-  res.cookie(SESSION_COOKIE, token, {
-    ...cookieOptions,
-    maxAge: authService.SESSION_TTL_MS,
-  });
+  setSessionCookie(res, token);
   res.json({ user });
 };
 
