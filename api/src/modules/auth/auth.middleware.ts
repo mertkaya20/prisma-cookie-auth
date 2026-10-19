@@ -1,4 +1,4 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import { ForbiddenError, UnauthorizedError } from "../../shared/errors.js";
 import * as authService from "./auth.service.js";
 import type { SessionUser } from "./auth.service.js";
@@ -43,4 +43,9 @@ export const requireRole = (role: Role): RequestHandler => {
 
     next();
   };
+};
+
+export const getAuthUser = (req: Request): SessionUser => {
+  if (!req.user) throw new UnauthorizedError();
+  return req.user;
 };
