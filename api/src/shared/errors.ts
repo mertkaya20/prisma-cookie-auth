@@ -29,3 +29,14 @@ export class ForbiddenError extends AppError {
     this.name = "ForbiddenError";
   }
 }
+
+export class TooManyRequestsError extends AppError {
+  constructor() {
+    super(
+      429,
+      "TOO_MANY_REQUESTS",
+      "Too many requests, please try again later",
+    );
+    this.name = "TooManyRequestsError";
+  }
+}

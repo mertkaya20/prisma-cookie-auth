@@ -1,6 +1,10 @@
 import { Router } from "express";
 import * as authController from "./auth.controller.js";
 import { requireAuth } from "./auth.middleware.js";
+import {
+  loginLimiter,
+  registerLimiter,
+} from "../../shared/middleware/rate-limit.middleware.js";
 
 export const authRouter = Router();
 
@@ -9,9 +13,9 @@ authRouter.use((_req, res, next) => {
   next();
 });
 
-authRouter.post("/register", authController.register);
+authRouter.post("/register", registerLimiter, authController.register);
 
-authRouter.post("/login", authController.login);
+authRouter.post("/login", loginLimiter, authController.login);
 
 authRouter.post("/logout", authController.logout);
 
