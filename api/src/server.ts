@@ -8,6 +8,7 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { config } from "./shared/config.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
+import { tagsRouter } from "./modules/tags/tags.routes.js";
 
 export const server = express();
 if (config.trustProxy > 0) {
@@ -26,6 +27,7 @@ server.get("/health", (_req, res) => {
 server.use("/auth", authRouter);
 server.use("/users", usersRouter);
 server.use("/projects", projectsRouter);
+server.use("/tags", tagsRouter);
 
 server.use(notFoundHandler);
 server.use(errorHandler);
