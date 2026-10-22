@@ -22,6 +22,20 @@ enum OrganizationStatus {
   suspended
 }
 
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum ProjectRole {
+  manager
+  contributor
+}
+
+// Tenant tutarlılığı: alt tablolar üst tabloya (organizationId, id) üzerinden bağlanır.
+// Böylece bir kayıt başka organizasyonun kaydına veritabanı seviyesinde bağlanamaz.
+
 model Organization {
   id        String             @id @default(uuid(7)) @db.Uuid
   name      String
@@ -29,6 +43,8 @@ model Organization {
   createdAt DateTime           @default(now()) @map("created_at")
   updatedAt DateTime           @updatedAt @map("updated_at")
   users     User[]
+  projects  Project[]
+  tags      Tag[]
 
   @@map("organizations")
 }
@@ -43,10 +59,16 @@ model User {
   updatedAt      DateTime @updatedAt @map("updated_at")
   organizationId String   @map("organization_id") @db.Uuid
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   sessions     Session[]
+  createdTasks Task[]
+  assignments  TaskAssignee[]
+  comments     Comment[]
+  projectMembers ProjectMember[]
 
-  @@index([organizationId])
+  // organizationId ile başladığı için "organizasyonun kullanıcıları" aramasını da karşılar;
+  // ayrıca @@index([organizationId]) gerekmez.
+  @@unique([organizationId, id])
   @@map("users")
 }
 
@@ -60,4 +82,126 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+model Project {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  tasks        Task[]
+  members ProjectMember[]
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, id])
+  @@map("projects")
+}
+
+model ProjectMember {
+  organizationId String @map("organization_id") @db.Uuid
+  projectId String @map("project_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  role ProjectRole @default(contributor)
+
+  project Project @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade)
+
+  user User @relation(fields: [organizationId, userId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([organizationId, userId])
+  @@map("project_members")
+}
+
+
+model Task {
+  id             String     @id @default(uuid(7)) @db.Uuid
+  organizationId String     @map("organization_id") @db.Uuid
+  projectId      String     @map("project_id") @db.Uuid
+  title          String
+  description    String?
+  status         TaskStatus @default(todo)
+  dueDate        DateTime?  @map("due_date")
+  createdById    String     @map("created_by_id") @db.Uuid
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Proje silinince görevleri de silinir (owner'ın proje silme yetkisi).
+  project   Project @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade)
+  // Bileşik FK'da SetNull organizationId'yi de null yapmaya çalışır; görev oluşturan kullanıcı silinemez.
+  createdBy User    @relation(fields: [organizationId, createdById], references: [organizationId, id], onDelete: Restrict)
+
+  assignees TaskAssignee[]
+  tags      TaskTag[]
+  comments  Comment[]
+
+  @@unique([organizationId, id])
+  @@index([projectId, status])
+  @@index([organizationId, createdById])
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  organizationId String @map("organization_id") @db.Uuid
+  taskId         String @map("task_id") @db.Uuid
+  userId         String @map("user_id") @db.Uuid
+
+  task Task @relation(fields: [organizationId, taskId], references: [organizationId, id], onDelete: Cascade)
+  user User @relation(fields: [organizationId, userId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  // "Bana atanan görevler": birincil anahtar taskId ile başladığı için userId aramasını karşılamaz.
+  @@index([organizationId, userId])
+  @@map("task_assignees")
+}
+
+model Tag {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  // "#RRGGBB" formatı uygulama katmanında (Zod) doğrulanır.
+  color          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  tasks        TaskTag[]
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, id])
+  @@map("tags")
+}
+
+model TaskTag {
+  organizationId String @map("organization_id") @db.Uuid
+  taskId         String @map("task_id") @db.Uuid
+  tagId          String @map("tag_id") @db.Uuid
+
+  task Task @relation(fields: [organizationId, taskId], references: [organizationId, id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [organizationId, tagId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([organizationId, tagId])
+  @@map("task_tags")
+}
+
+model Comment {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  taskId         String   @map("task_id") @db.Uuid
+  authorId       String   @map("author_id") @db.Uuid
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  task   Task @relation(fields: [organizationId, taskId], references: [organizationId, id], onDelete: Cascade)
+  // Yorumlar diğer kullanıcılar için de değerli; yazarı silinemez.
+  author User @relation(fields: [organizationId, authorId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([taskId, createdAt])
+  @@index([organizationId, authorId])
+  @@map("comments")
 }
