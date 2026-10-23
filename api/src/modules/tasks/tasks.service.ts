@@ -1,13 +1,24 @@
 import { z } from "zod";
-import type { TaskStatus } from "../../generated/prisma/enums.js";
+
+import { ProjectRole, type TaskStatus } from "../../generated/prisma/enums.js";
 import { db } from "../../shared/db.js";
 import { ForbiddenError, NotFoundError } from "../../shared/errors.js";
-import type { SessionUser } from "../auth/auth.service.js";
+import { userSelect, type SessionUser } from "../auth/auth.service.js";
 import type { createTaskSchema, updateTaskSchema } from "./tasks.schema.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
 type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+
+const EDIT_ROLES = [ProjectRole.manager, ProjectRole.contributor];
+const DELETE_ROLES = [ProjectRole.manager];
+
+const taskInclude = {
+  createdBy: { select: userSelect },
+  assignees: { select: { user: { select: userSelect } } },
+  tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
+} satisfies Prisma.TaskInclude;
 
 const findProjectOrThrow = async (
   organizationId: string,
@@ -22,9 +33,10 @@ const findProjectOrThrow = async (
   return project;
 };
 
-const findEditableProjectOrThrow = async (
+const findProjectWithAccessOrThrow = async (
   user: SessionUser,
   projectId: string,
+  allowedRoles: ProjectRole[],
 ) => {
   const project = await findProjectOrThrow(user.organizationId, projectId);
 
@@ -33,9 +45,19 @@ const findEditableProjectOrThrow = async (
   const membership = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId: project.id, userId: user.id } },
   });
-  if (!membership) throw new ForbiddenError();
+  if (!membership || !allowedRoles.includes(membership.role))
+    throw new ForbiddenError();
 
   return project;
+};
+
+const findTaskOrThrow = async (organizationId: string, id: string) => {
+  const task = await db.task.findUnique({
+    where: { organizationId_id: { organizationId, id } },
+  });
+
+  if (!task) throw new NotFoundError();
+  return task;
 };
 
 export const listTasks = async (
@@ -56,7 +78,7 @@ export const createTask = async (
   projectId: string,
   input: CreateTaskInput,
 ) => {
-  await findEditableProjectOrThrow(user, projectId);
+  await findProjectWithAccessOrThrow(user, projectId, EDIT_ROLES);
 
   return db.task.create({
     data: {
@@ -65,5 +87,66 @@ export const createTask = async (
       projectId,
       createdById: user.id,
     },
+    include: taskInclude,
   });
+};
+
+export const getTask = async (user: SessionUser, id: string) => {
+  const task = await db.task.findUnique({
+    where: {
+      organizationId_id: { organizationId: user.organizationId, id },
+    },
+    include: taskInclude,
+  });
+
+  if (!task) throw new NotFoundError();
+  return task;
+};
+
+export const updateTask = async (
+  user: SessionUser,
+  id: string,
+  input: UpdateTaskInput,
+) => {
+  const task = await findTaskOrThrow(user.organizationId, id);
+
+  await findProjectWithAccessOrThrow(user, task.projectId, EDIT_ROLES);
+
+  try {
+    return await db.task.update({
+      where: { organizationId_id: { organizationId: user.organizationId, id } },
+      data: input,
+      include: taskInclude,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new NotFoundError();
+    }
+    throw error;
+  }
+};
+
+export const deleteTask = async (user: SessionUser, id: string) => {
+  const task = await findTaskOrThrow(user.organizationId, id);
+
+  await findProjectWithAccessOrThrow(user, task.projectId, DELETE_ROLES);
+
+  try {
+    return await db.task.delete({
+      where: {
+        organizationId_id: { organizationId: user.organizationId, id },
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new NotFoundError();
+    }
+    throw error;
+  }
 };

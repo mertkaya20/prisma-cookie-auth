@@ -5,6 +5,8 @@ import {
   createTaskSchema,
   listTasksQuerySchema,
   projectIdParamsSchema,
+  taskIdParamsSchema,
+  updateTaskSchema,
 } from "./tasks.schema.js";
 
 export const listTasks: RequestHandler = async (req, res) => {
@@ -25,4 +27,32 @@ export const createTask: RequestHandler = async (req, res) => {
   const task = await tasksService.createTask(user, projectId, parsedData);
 
   res.status(201).json({ task });
+};
+
+export const getTask: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = taskIdParamsSchema.parse(req.params);
+
+  const task = await tasksService.getTask(user, id);
+
+  res.json({ task });
+};
+
+export const updateTask: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = taskIdParamsSchema.parse(req.params);
+  const parsedData = updateTaskSchema.parse(req.body);
+
+  const task = await tasksService.updateTask(user, id, parsedData);
+
+  res.json({ task });
+};
+
+export const deleteTask: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = taskIdParamsSchema.parse(req.params);
+
+  await tasksService.deleteTask(user, id);
+
+  res.status(204).end();
 };

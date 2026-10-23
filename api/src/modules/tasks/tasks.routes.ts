@@ -9,3 +9,6 @@ projectTasksRouter.post("/", tasksController.createTask);
 
 export const tasksRouter = Router();
 tasksRouter.use(requireAuth);
+tasksRouter.get("/:id", tasksController.getTask);
+tasksRouter.patch("/:id", tasksController.updateTask);
+tasksRouter.delete("/:id", tasksController.deleteTask);
