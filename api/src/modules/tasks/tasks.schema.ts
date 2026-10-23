@@ -41,3 +41,12 @@ export const taskIdParamsSchema = z.object({
 export const projectIdParamsSchema = z.object({
   projectId: z.uuid(),
 });
+
+export const addAssigneeSchema = z.object({
+  userId: z.uuid(),
+});
+
+export const removeAssigneeParamsSchema = z.object({
+  id: z.uuid(),
+  userId: z.uuid(),
+});

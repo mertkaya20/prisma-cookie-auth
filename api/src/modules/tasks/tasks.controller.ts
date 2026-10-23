@@ -2,7 +2,9 @@ import type { RequestHandler } from "express";
 import * as tasksService from "./tasks.service.js";
 import { getAuthUser } from "../auth/auth.middleware.js";
 import {
+  addAssigneeSchema,
   createTaskSchema,
+  removeAssigneeParamsSchema,
   listTasksQuerySchema,
   projectIdParamsSchema,
   taskIdParamsSchema,
@@ -53,6 +55,26 @@ export const deleteTask: RequestHandler = async (req, res) => {
   const { id } = taskIdParamsSchema.parse(req.params);
 
   await tasksService.deleteTask(user, id);
+
+  res.status(204).end();
+};
+
+export const addAssignee: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = taskIdParamsSchema.parse(req.params);
+
+  const { userId } = addAssigneeSchema.parse(req.body);
+
+  const task = await tasksService.addAssignee(user, id, userId);
+
+  res.status(201).json({ task });
+};
+
+export const removeAssignee: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id, userId } = removeAssigneeParamsSchema.parse(req.params);
+
+  await tasksService.removeAssignee(user, id, userId);
 
   res.status(204).end();
 };
