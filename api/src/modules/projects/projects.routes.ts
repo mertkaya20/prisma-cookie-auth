@@ -27,3 +27,11 @@ projectsRouter.delete(
   requireRole("owner"),
   projectsController.deleteProject,
 );
+
+projectsRouter.get("/:id/members", projectsController.listMembers);
+
+projectsRouter.post("/:id/members", projectsController.addMember);
+
+projectsRouter.patch("/:id/members/:userId", projectsController.updateMember);
+
+projectsRouter.delete("/:id/members/:userId", projectsController.removeMember);
