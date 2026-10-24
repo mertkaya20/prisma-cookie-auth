@@ -23,7 +23,7 @@ const taskInclude = {
   tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
 } satisfies Prisma.TaskInclude;
 
-const findTaskOrThrow = async (organizationId: string, id: string) => {
+export const findTaskOrThrow = async (organizationId: string, id: string) => {
   const task = await db.task.findUnique({
     where: { organizationId_id: { organizationId, id } },
   });
