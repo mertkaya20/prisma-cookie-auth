@@ -13,6 +13,10 @@ import {
   projectTasksRouter,
   tasksRouter,
 } from "./modules/tasks/tasks.routes.js";
+import {
+  commentsRouter,
+  taskCommentsRouter,
+} from "./modules/comments/comments.routes.js";
 
 export const server = express();
 if (config.trustProxy > 0) {
@@ -33,7 +37,9 @@ server.use("/users", usersRouter);
 server.use("/projects", projectsRouter);
 server.use("/tags", tagsRouter);
 server.use("/projects/:projectId/tasks", projectTasksRouter);
+server.use("/tasks/:taskId/comments", taskCommentsRouter);
 server.use("/tasks", tasksRouter);
+server.use("/comments", commentsRouter);
 
 server.use(notFoundHandler);
 server.use(errorHandler);
