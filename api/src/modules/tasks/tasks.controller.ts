@@ -99,3 +99,13 @@ export const removeTag: RequestHandler = async (req, res) => {
 
   res.status(204).end();
 };
+
+export const listAssignedTasks: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+
+  const { status } = listTasksQuerySchema.parse(req.query);
+
+  const tasks = await tasksService.listAssignedTasks(user, status);
+
+  res.json({ tasks });
+};

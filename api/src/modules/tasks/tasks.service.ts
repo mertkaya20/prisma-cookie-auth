@@ -307,3 +307,17 @@ export const removeTag = async (
     throw error;
   }
 };
+
+export const listAssignedTasks = async (
+  user: SessionUser,
+  status?: TaskStatus,
+) => {
+  return db.task.findMany({
+    where: {
+      organizationId: user.organizationId,
+      assignees: { some: { userId: user.id } },
+      status,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
