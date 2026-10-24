@@ -9,6 +9,10 @@ import { usersRouter } from "./modules/users/users.routes.js";
 import { config } from "./shared/config.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
 import { tagsRouter } from "./modules/tags/tags.routes.js";
+import {
+  projectTasksRouter,
+  tasksRouter,
+} from "./modules/tasks/tasks.routes.js";
 
 export const server = express();
 if (config.trustProxy > 0) {
@@ -28,6 +32,8 @@ server.use("/auth", authRouter);
 server.use("/users", usersRouter);
 server.use("/projects", projectsRouter);
 server.use("/tags", tagsRouter);
+server.use("/projects/:projectId/tasks", projectTasksRouter);
+server.use("/tasks", tasksRouter);
 
 server.use(notFoundHandler);
 server.use(errorHandler);
