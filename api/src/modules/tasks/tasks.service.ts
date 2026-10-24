@@ -1,59 +1,27 @@
 import { z } from "zod";
 
-import { ProjectRole, type TaskStatus } from "../../generated/prisma/enums.js";
+import { type TaskStatus } from "../../generated/prisma/enums.js";
 import { db } from "../../shared/db.js";
-import {
-  AppError,
-  ForbiddenError,
-  NotFoundError,
-} from "../../shared/errors.js";
+import { AppError, NotFoundError } from "../../shared/errors.js";
 import { userSelect, type SessionUser } from "../auth/auth.service.js";
 import type { createTaskSchema, updateTaskSchema } from "./tasks.schema.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import {
+  EDIT_ROLES,
+  findProjectOrThrow,
+  findProjectWithAccessOrThrow,
+  MANAGE_ROLES,
+} from "../projects/projects.service.js";
 
 type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
 type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
-
-const EDIT_ROLES = [ProjectRole.manager, ProjectRole.contributor];
-const MANAGE_ROLES = [ProjectRole.manager];
 
 const taskInclude = {
   createdBy: { select: userSelect },
   assignees: { select: { user: { select: userSelect } } },
   tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
 } satisfies Prisma.TaskInclude;
-
-const findProjectOrThrow = async (
-  organizationId: string,
-  projectId: string,
-) => {
-  const project = await db.project.findUnique({
-    where: { organizationId_id: { organizationId, id: projectId } },
-  });
-  if (!project) {
-    throw new NotFoundError();
-  }
-  return project;
-};
-
-const findProjectWithAccessOrThrow = async (
-  user: SessionUser,
-  projectId: string,
-  allowedRoles: ProjectRole[],
-) => {
-  const project = await findProjectOrThrow(user.organizationId, projectId);
-
-  if (user.role === "owner") return project;
-
-  const membership = await db.projectMember.findUnique({
-    where: { projectId_userId: { projectId: project.id, userId: user.id } },
-  });
-  if (!membership || !allowedRoles.includes(membership.role))
-    throw new ForbiddenError();
-
-  return project;
-};
 
 const findTaskOrThrow = async (organizationId: string, id: string) => {
   const task = await db.task.findUnique({
@@ -160,19 +128,6 @@ export const addAssignee = async (
   id: string,
   assigneeId: string,
 ) => {
-  /* 
-  Akış--
-  POST /tasks/:id/assignees istek geldi.
-  requireAuth kullanıldı kullanıcı authenticate olmuş mu kontrol edildi.
-  Sonrasında yolunu buldu tasks/:id/assignees controllera düştü sonrasında controller service e yönlendirdi. 
-  Fonksiyon Görevi--
-  1-) Kullanıcının organizasyonunun böyle bir görevi var mı ? Kontrol hata mesajları.
-  2-) Auth olmuş kullanıcının bu fonksiyonun işlevini yapmaya rolü yetiyor mu ? Kontrol hata mesajları.
-  3-) Eğer yetiyorsa auth olmuş kullanıcının eklemeye çalıştığı kişi projectMember mı ? Değilse ekleyemez.
-  4-) ProjectMember ise db.taskAssignee.create taskId userId ve organizationId verilir
-  5-) Sonrasında getTask fonksiyonu çalıştırılır ve sonuç döndürülür. 
-  */
-
   const task = await findTaskOrThrow(user.organizationId, id);
 
   const project = await findProjectWithAccessOrThrow(

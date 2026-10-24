@@ -1,12 +1,51 @@
 import { z } from "zod";
 import { db } from "../../shared/db.js";
-import { AppError, NotFoundError } from "../../shared/errors.js";
+import {
+  AppError,
+  ForbiddenError,
+  NotFoundError,
+} from "../../shared/errors.js";
 import { createProjectSchema, updateProjectSchema } from "./projects.schema.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma, ProjectRole } from "../../generated/prisma/client.js";
+import type { SessionUser } from "../auth/auth.service.js";
 
 type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
 type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+
+export const EDIT_ROLES = [ProjectRole.manager, ProjectRole.contributor];
+export const MANAGE_ROLES = [ProjectRole.manager];
+
+export const findProjectOrThrow = async (
+  organizationId: string,
+  projectId: string,
+) => {
+  const project = await db.project.findUnique({
+    where: { organizationId_id: { organizationId, id: projectId } },
+  });
+  if (!project) {
+    throw new NotFoundError();
+  }
+  return project;
+};
+
+export const findProjectWithAccessOrThrow = async (
+  user: SessionUser,
+  projectId: string,
+  allowedRoles: ProjectRole[],
+) => {
+  const project = await findProjectOrThrow(user.organizationId, projectId);
+
+  if (user.role === "owner") return project;
+
+  const membership = await db.projectMember.findUnique({
+    where: { projectId_userId: { projectId: project.id, userId: user.id } },
+  });
+  if (!membership || !allowedRoles.includes(membership.role))
+    throw new ForbiddenError();
+
+  return project;
+};
 
 export const listProjects = async (organizationId: string) => {
   return db.project.findMany({
