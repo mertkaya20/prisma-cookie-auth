@@ -50,3 +50,12 @@ export const removeAssigneeParamsSchema = z.object({
   id: z.uuid(),
   userId: z.uuid(),
 });
+
+export const addTagSchema = z.object({
+  tagId: z.uuid(),
+});
+
+export const removeTagParamsSchema = z.object({
+  id: z.uuid(),
+  tagId: z.uuid(),
+});

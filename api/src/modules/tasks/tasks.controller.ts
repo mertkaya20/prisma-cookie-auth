@@ -9,6 +9,8 @@ import {
   projectIdParamsSchema,
   taskIdParamsSchema,
   updateTaskSchema,
+  addTagSchema,
+  removeTagParamsSchema,
 } from "./tasks.schema.js";
 
 export const listTasks: RequestHandler = async (req, res) => {
@@ -75,6 +77,25 @@ export const removeAssignee: RequestHandler = async (req, res) => {
   const { id, userId } = removeAssigneeParamsSchema.parse(req.params);
 
   await tasksService.removeAssignee(user, id, userId);
+
+  res.status(204).end();
+};
+
+export const addTag: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = taskIdParamsSchema.parse(req.params);
+  const { tagId } = addTagSchema.parse(req.body);
+
+  const task = await tasksService.addTag(user, id, tagId);
+
+  res.status(201).json({ task });
+};
+
+export const removeTag: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id, tagId } = removeTagParamsSchema.parse(req.params);
+
+  await tasksService.removeTag(user, id, tagId);
 
   res.status(204).end();
 };

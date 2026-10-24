@@ -241,3 +241,69 @@ export const removeAssignee = async (
     throw error;
   }
 };
+
+export const addTag = async (
+  user: SessionUser,
+  taskId: string,
+  tagId: string,
+) => {
+  const task = await findTaskOrThrow(user.organizationId, taskId);
+
+  await findProjectWithAccessOrThrow(user, task.projectId, EDIT_ROLES);
+
+  const tag = await db.tag.findUnique({
+    where: {
+      organizationId_id: { organizationId: user.organizationId, id: tagId },
+    },
+  });
+  if (!tag) {
+    throw new AppError(
+      400,
+      "TAG_NOT_FOUND",
+      "The tag you are trying to add does not exist",
+    );
+  }
+  try {
+    await db.taskTag.create({
+      data: { organizationId: user.organizationId, tagId, taskId },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new AppError(
+        409,
+        "TAG_ALREADY_ADDED",
+        "Tag is already added to this task",
+      );
+    }
+    throw error;
+  }
+
+  return getTask(user, taskId);
+};
+
+export const removeTag = async (
+  user: SessionUser,
+  taskId: string,
+  tagId: string,
+) => {
+  const task = await findTaskOrThrow(user.organizationId, taskId);
+
+  await findProjectWithAccessOrThrow(user, task.projectId, EDIT_ROLES);
+
+  try {
+    await db.taskTag.delete({
+      where: { taskId_tagId: { taskId, tagId } },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new NotFoundError();
+    }
+    throw error;
+  }
+};
