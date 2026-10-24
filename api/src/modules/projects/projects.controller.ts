@@ -2,8 +2,11 @@ import type { RequestHandler } from "express";
 import { getAuthUser } from "../auth/auth.middleware.js";
 import * as projectsService from "./projects.service.js";
 import {
+  addMemberSchema,
   createProjectSchema,
+  memberParamsSchema,
   projectIdParamsSchema,
+  updateMemberSchema,
   updateProjectSchema,
 } from "./projects.schema.js";
 
@@ -60,6 +63,44 @@ export const deleteProject: RequestHandler = async (req, res) => {
   const { id } = projectIdParamsSchema.parse(req.params);
 
   await projectsService.deleteProject(organizationId, id);
+
+  res.status(204).end();
+};
+
+export const listMembers: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = projectIdParamsSchema.parse(req.params);
+
+  const members = await projectsService.listMembers(user, id);
+
+  res.json({ members });
+};
+
+export const addMember: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id } = projectIdParamsSchema.parse(req.params);
+  const { userId, role } = addMemberSchema.parse(req.body);
+
+  const member = await projectsService.addMember(user, id, userId, role);
+
+  res.status(201).json({ member });
+};
+
+export const updateMember: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id, userId } = memberParamsSchema.parse(req.params);
+  const { role } = updateMemberSchema.parse(req.body);
+
+  const member = await projectsService.updateMember(user, id, userId, role);
+
+  res.json({ member });
+};
+
+export const removeMember: RequestHandler = async (req, res) => {
+  const user = getAuthUser(req);
+  const { id, userId } = memberParamsSchema.parse(req.params);
+
+  await projectsService.removeMember(user, id, userId);
 
   res.status(204).end();
 };
