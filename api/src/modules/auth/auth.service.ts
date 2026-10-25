@@ -41,7 +41,7 @@ const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 
 // Token'ın kendisi cookie'ye gider, veritabanına sadece hash'i yazılır.
-const createSession = async (userId: string) => {
+export const createSession = async (userId: string) => {
   const token = randomBytes(32).toString("base64url");
 
   await db.session.create({
