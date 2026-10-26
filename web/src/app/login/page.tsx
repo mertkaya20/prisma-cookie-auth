@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { api, ApiError } from "@/lib/api";
-import type { User } from "@/lib/types";
 import { useMutation } from "@tanstack/react-query";
+import { AuthShell } from "@/components/auth-shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
+import type { User } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,12 +29,6 @@ export default function LoginPage() {
     },
   });
 
-  const error = mutateError
-    ? mutateError instanceof ApiError
-      ? mutateError.message
-      : "Something went wrong, please try again later."
-    : null;
-
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -36,58 +36,56 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <h1 className="text-2xl font-semibold">Login</h1>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          E-mail
-          <input
+    <AuthShell
+      title="Log in"
+      description="Welcome back. Pick up where your team left off."
+      footer={
+        <>
+          No account yet?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-pine underline-offset-4 hover:underline"
+          >
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2"
           />
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Password
-          <input
+        <div className="grid gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
             type="password"
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2"
           />
-        </label>
+        </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {error}
-          </p>
+        {mutateError && (
+          <Alert variant="destructive">
+            <AlertDescription>{getErrorMessage(mutateError)}</AlertDescription>
+          </Alert>
         )}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" size="lg" disabled={isPending} className="mt-1">
           {isPending ? "Logging in..." : "Log in"}
-        </button>
+        </Button>
       </form>
-
-      <p className="text-sm text-zinc-600">
-        No account?{" "}
-        <Link href="/register" className="underline">
-          Register
-        </Link>
-      </p>
-    </main>
+    </AuthShell>
   );
 }

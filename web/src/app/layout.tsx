@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import "@fontsource-variable/schibsted-grotesk";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "TaskApp",
+  title: { default: "Halfway", template: "%s | Halfway" },
+  description: "Projects and tasks for small teams.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-zinc-50 font-sans text-zinc-900">
+    <html lang="en" className="h-full">
+      <body className="min-h-full">
         <Providers>{children}</Providers>
       </body>
     </html>
