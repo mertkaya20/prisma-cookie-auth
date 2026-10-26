@@ -15,6 +15,7 @@ if (!testDatabaseUrl || !new URL(testDatabaseUrl).pathname.endsWith("_test")) {
 // config.ts'deki dotenv var olan değeri ezmez; globalSetup ve test worker'ları bunu miras alır.
 process.env["DATABASE_URL"] = testDatabaseUrl;
 process.env["NODE_ENV"] = "test";
+process.env["CORS_ORIGIN"] = "http://localhost:3001";
 
 export default defineConfig({
   test: {
