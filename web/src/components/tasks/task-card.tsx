@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarIcon } from "lucide-react";
 import { TagChip } from "@/components/tag-chip";
 import { StatusMenu } from "@/components/tasks/status-menu";
-import { formatShortDate, initials, isOverdue } from "@/lib/format";
+import { formatDueDate, initials, isOverdue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Task, TaskStatus } from "@/lib/types";
 
@@ -63,7 +63,7 @@ export function TaskCard({
                   )}
                 >
                   <CalendarIcon className="size-3.5" aria-hidden />
-                  {formatShortDate(task.dueDate)}
+                  {formatDueDate(task.dueDate)}
                   {overdue && <span>(overdue)</span>}
                 </span>
               ) : (
