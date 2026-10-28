@@ -8,3 +8,12 @@ export type User = {
 };
 
 export type TaskStatus = "todo" | "in_progress" | "done";
+
+export type Project = {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

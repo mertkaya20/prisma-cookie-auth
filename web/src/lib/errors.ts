@@ -10,6 +10,14 @@ const messages: Record<string, string> = {
   UNAUTHORIZED: "Your session has ended. Log in again.",
   FORBIDDEN: "You don't have permission to do that.",
   NOT_FOUND: "This item doesn't exist or was deleted.",
+  PROJECT_NAME_TAKEN: "A project with this name already exists. Choose another name.",
+  TAG_NAME_TAKEN: "A tag with this name already exists.",
+  TAG_NOT_FOUND: "This tag doesn't exist anymore.",
+  TAG_ALREADY_ADDED: "This tag is already on the task.",
+  ASSIGNEE_NOT_IN_PROJECT: "Only people on the project team can be assigned.",
+  ALREADY_ASSIGNED: "This person is already assigned.",
+  USER_NOT_FOUND: "This person isn't in your organization.",
+  USER_ALREADY_PROJECT_MEMBER: "This person is already on the team.",
 };
 
 export function getErrorMessage(error: unknown): string {
