@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { queryKeys } from "@/lib/query-keys";
 import type { User } from "@/lib/types";
 import { useMe } from "@/lib/session";
 import { LoadingScreen } from "@/components/page-state";
@@ -44,7 +45,7 @@ export default function RegisterPage() {
       api<{ user: User }>("/auth/register", { method: "POST", body }),
     // Kayıt aynı zamanda giriş yapar (API cookie'yi koyar).
     onSuccess: (data) => {
-      queryClient.setQueryData(["me"], data);
+      queryClient.setQueryData(queryKeys.me, data);
       router.push("/app");
     },
   });

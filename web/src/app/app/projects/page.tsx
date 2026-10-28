@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { queryKeys } from "@/lib/query-keys";
 import { useMe } from "@/lib/session";
 import type { Project } from "@/lib/types";
 
@@ -28,7 +29,7 @@ export default function ProjectsPage() {
   const isOwner = me.data?.user.role === "owner";
 
   const projectsQuery = useQuery({
-    queryKey: ["projects"],
+    queryKey: queryKeys.projects,
     queryFn: () => api<{ projects: Project[] }>("/projects"),
   });
 
@@ -36,7 +37,7 @@ export default function ProjectsPage() {
     mutationFn: (body: NewProjectValues) =>
       api<{ project: Project }>("/projects", { method: "POST", body }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects });
       setDialogOpen(false);
     },
   });

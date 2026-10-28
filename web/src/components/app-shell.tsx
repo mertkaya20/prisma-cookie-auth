@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
 
@@ -26,15 +27,6 @@ const roleLabel: Record<User["role"], string> = {
   owner: "Owner",
   member: "Member",
 };
-
-export function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 // Giriş yapmış kullanıcının gördüğü kabuk: üstte logo, bölümler ve kullanıcı menüsü.
 export function AppShell({
