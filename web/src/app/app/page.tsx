@@ -1,7 +1,6 @@
-export default function PanelPage() {
-  return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">Panel</h1>
-    </main>
-  );
+import { redirect } from "next/navigation";
+
+// /app'in kendi içeriği yok; giriş yapan kullanıcı projelerle başlar.
+export default function AppIndex() {
+  redirect("/app/projects");
 }

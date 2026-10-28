@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AuthShell } from "@/components/auth-shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import type { User } from "@/lib/types";
+import { useMe } from "@/lib/session";
+import { LoadingScreen } from "@/components/page-state";
 
 type RegisterInput = {
   name: string;
@@ -30,12 +32,21 @@ const empty: RegisterInput = {
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState(empty);
+  const me = useMe();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (me.data) router.replace("/app");
+  }, [me.data, router]);
 
   const register = useMutation({
     mutationFn: (body: RegisterInput) =>
       api<{ user: User }>("/auth/register", { method: "POST", body }),
     // Kayıt aynı zamanda giriş yapar (API cookie'yi koyar).
-    onSuccess: () => router.push("/app"),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["me"], data);
+      router.push("/app");
+    },
   });
 
   const update =
@@ -46,6 +57,10 @@ export default function RegisterPage() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     register.mutate(form);
+  }
+
+  if (me.isPending || me.data) {
+    return <LoadingScreen />;
   }
 
   return (

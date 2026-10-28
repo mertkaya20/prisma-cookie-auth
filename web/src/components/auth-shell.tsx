@@ -41,7 +41,8 @@ export function AuthShell({
   return (
     <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(26rem,32rem)]">
       <aside className="hidden flex-col justify-between border-r border-line p-12 lg:flex">
-        <Link href="/" className="self-start">
+        {/* flex: bağlantı logoyu metin satırı gibi yerleştirip altına boşluk bırakmasın. */}
+        <Link href="/" className="flex self-start">
           <Logo />
         </Link>
 
@@ -79,7 +80,7 @@ export function AuthShell({
         <div className="mx-auto w-full max-w-sm">
           <Link
             href="/"
-            className="mb-10 inline-block lg:hidden"
+            className="mb-10 flex w-fit lg:hidden"
           >
             <Logo />
           </Link>

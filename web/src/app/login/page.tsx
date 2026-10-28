@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AuthShell } from "@/components/auth-shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,20 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import type { User } from "@/lib/types";
+import { useMe } from "@/lib/session";
+import { LoadingScreen } from "@/components/page-state";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const me = useMe();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (me.data) router.replace("/app");
+  }, [me.data, router]);
+
   const {
     error: mutateError,
     isPending,
@@ -24,7 +33,8 @@ export default function LoginPage() {
   } = useMutation({
     mutationFn: (body: { email: string; password: string }) =>
       api<{ user: User }>("/auth/login", { method: "POST", body }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(["me"], data);
       router.push("/app");
     },
   });
@@ -33,6 +43,10 @@ export default function LoginPage() {
     event.preventDefault();
 
     mutate({ email, password });
+  }
+
+  if (me.isPending || me.data) {
+    return <LoadingScreen />;
   }
 
   return (
