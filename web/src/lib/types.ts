@@ -46,3 +46,16 @@ export type Task = {
   assignees: { user: User }[];
   tags: { tag: TagSummary }[];
 };
+
+// commentInclude: yorumun kendi alanları + yazarı.
+// Adı "Comment" değil: o isimde global bir DOM tipi var, import unutulursa sessizce onu kullanırdı.
+export type TaskComment = {
+  id: string;
+  organizationId: string;
+  taskId: string;
+  authorId: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  author: User;
+};

@@ -25,6 +25,18 @@ export function formatDueDate(iso: string) {
   return dueDateFormat.format(new Date(iso));
 }
 
+// Yorum zamanı gerçek bir an: son tarihin aksine kullanıcının yerel saatiyle gösterilir.
+const commentTimeFormat = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+export function formatCommentTime(iso: string) {
+  return commentTimeFormat.format(new Date(iso));
+}
+
 // "2026-11-12T00:00:00.000Z" → "2026-11-12" (<input type="date"> bu biçimi bekler)
 export function toDateInputValue(iso: string | null) {
   return iso ? iso.slice(0, 10) : "";

@@ -27,6 +27,7 @@ import type {
 } from "@/lib/types";
 import { AssigneesSection } from "@/components/tasks/assignees-section";
 import { TagsSection } from "@/components/tasks/tags-section";
+import { CommentsSection } from "@/components/tasks/comments-section";
 
 export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
@@ -211,7 +212,7 @@ export default function TaskPage() {
         </Alert>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr]">
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-[1.5625rem] leading-tight font-semibold tracking-tight break-words">
@@ -242,7 +243,7 @@ export default function TaskPage() {
           </div>
         </div>
 
-        <aside className="flex flex-col gap-3">
+        <aside className="flex flex-col gap-3 lg:row-span-2">
           <TaskDetails
             task={task}
             canEdit={canEdit}
@@ -288,6 +289,15 @@ export default function TaskPage() {
             </Button>
           )}
         </aside>
+
+        <div className="min-w-0 lg:col-start-1">
+          <CommentsSection
+            taskId={task.id}
+            meId={me.data?.user.id}
+            canComment={canEdit}
+            canModerate={canDelete}
+          />
+        </div>
       </div>
 
       <EditTaskDialog
