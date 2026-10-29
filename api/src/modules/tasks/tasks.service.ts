@@ -274,6 +274,10 @@ export const listAssignedTasks = async (
       assignees: { some: { userId: user.id } },
       status,
     },
+    include: {
+      ...taskInclude,
+      project: { select: { id: true, name: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 };

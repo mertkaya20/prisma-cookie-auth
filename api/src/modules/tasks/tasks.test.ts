@@ -277,4 +277,25 @@ describe("business rules", () => {
     expect(res.body.tasks[0].tags[0].tag.name).toBe("acil");
     expect(JSON.stringify(res.body)).not.toContain("passwordHash");
   });
+  it("K7: assigned-to-me comes with the project name, assignees and tags, without password hashes", async () => {
+    await as(alpha.manager)
+      .post(`${task()}/assignees`)
+      .send({ userId: alpha.contributor.user.id });
+    await as(alpha.contributor)
+      .post(`${task()}/tags`)
+      .send({ tagId: alphaTagId });
+
+    const res = await as(alpha.contributor).get("/tasks/assigned-to-me");
+
+    expect(res.body.tasks[0].project).toEqual({
+      id: alpha.project.id,
+      name: alpha.project.name,
+    });
+    expect(res.body.tasks[0].createdBy.email).toBe(alpha.owner.user.email);
+    expect(res.body.tasks[0].assignees[0].user.email).toBe(
+      alpha.contributor.user.email,
+    );
+    expect(res.body.tasks[0].tags[0].tag.name).toBe("acil");
+    expect(JSON.stringify(res.body)).not.toContain("passwordHash");
+  });
 });
