@@ -7,6 +7,7 @@ export const queryKeys = {
   projectMembers: (id: string) => ["projects", id, "members"],
   task: (id: string) => ["tasks", id],
   taskComments: (id: string) => ["tasks", id, "comments"],
+  assignedTasks: ["tasks", "assigned-to-me"],
   tags: ["tags"],
   users: ["users"],
 } as const;

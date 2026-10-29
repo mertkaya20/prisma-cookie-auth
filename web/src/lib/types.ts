@@ -47,6 +47,9 @@ export type Task = {
   tags: { tag: TagSummary }[];
 };
 
+// /tasks/assigned-to-me: farklı projelerden gelir, her görev projesinin adını da taşır.
+export type AssignedTask = Task & { project: { id: string; name: string } };
+
 // commentInclude: yorumun kendi alanları + yazarı.
 // Adı "Comment" değil: o isimde global bir DOM tipi var, import unutulursa sessizce onu kullanırdı.
 export type TaskComment = {
