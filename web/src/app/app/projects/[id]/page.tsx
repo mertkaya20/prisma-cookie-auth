@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeftIcon, PlusIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { TeamSection } from "@/components/projects/team-section";
 import { EmptyState } from "@/components/page-state";
 import {
   NewTaskDialog,
@@ -19,7 +20,14 @@ import { api, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { queryKeys } from "@/lib/query-keys";
 import { useMe } from "@/lib/session";
-import type { Member, Project, Task, TaskStatus } from "@/lib/types";
+import type {
+  Member,
+  Project,
+  ProjectRole,
+  Task,
+  TaskStatus,
+  User,
+} from "@/lib/types";
 
 // Üst menüdeki aktif link ile aynı görünüm: seçili sekmenin altında koyu çizgi.
 const tabTriggerClass =
@@ -93,12 +101,53 @@ export default function ProjectPage() {
     },
   });
 
+  // Takıma eklenebilecek kişiler: organizasyondaki herkes.
+  const usersQuery = useQuery({
+    queryKey: queryKeys.users,
+    queryFn: () => api<{ users: User[] }>("/users"),
+  });
+
+  const addMember = useMutation({
+    mutationFn: (userId: string) =>
+      api<{ member: Member }>(`/projects/${id}/members`, {
+        method: "POST",
+        body: { userId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectMembers(id) });
+    },
+  });
+
+  const updateMember = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: ProjectRole }) =>
+      api<{ member: Member }>(`/projects/${id}/members/${userId}`, {
+        method: "PATCH",
+        body: { role },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectMembers(id) });
+    },
+  });
+
+  const removeMember = useMutation({
+    mutationFn: (userId: string) =>
+      api(`/projects/${id}/members/${userId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectMembers(id) });
+    },
+  });
+
   // Görev oluşturma ve durum değiştirme: owner ya da projenin ekibi (API'deki EDIT_ROLES).
+  // Takımı yönetmek: owner ya da projenin manager'ı (API'deki MANAGE_ROLES).
   const isOwner = me.data?.user.role === "owner";
-  const isOnTeam =
-    membersQuery.data?.members.some((m) => m.userId === me.data?.user.id) ??
-    false;
-  const canEdit = isOwner || isOnTeam;
+  const myRole = membersQuery.data?.members.find(
+    (m) => m.userId === me.data?.user.id,
+  )?.role;
+  const canEdit = isOwner || myRole !== undefined;
+  const canManage = isOwner || myRole === "manager";
+
+  const memberError =
+    addMember.error ?? updateMember.error ?? removeMember.error;
 
   if (projectQuery.isPending) {
     return (
@@ -218,8 +267,34 @@ export default function ProjectPage() {
         </TabsContent>
 
         <TabsContent value="team">
-          {/* 7.6d: TeamSection buraya gelecek. */}
-          <p className="text-ink-muted">Team comes here.</p>
+          {membersQuery.isPending ? (
+            <div aria-hidden className="h-48 animate-pulse rounded-xl bg-wash" />
+          ) : membersQuery.error ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {getErrorMessage(membersQuery.error)}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <TeamSection
+              members={membersQuery.data.members}
+              users={usersQuery.data?.users ?? []}
+              meId={me.data?.user.id}
+              isOwner={isOwner}
+              canManage={canManage}
+              onAdd={(userId) => addMember.mutate(userId)}
+              onChangeRole={(userId, role) =>
+                updateMember.mutate({ userId, role })
+              }
+              onRemove={(userId) => removeMember.mutate(userId)}
+              pending={
+                addMember.isPending ||
+                updateMember.isPending ||
+                removeMember.isPending
+              }
+              error={memberError ? getErrorMessage(memberError) : null}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
