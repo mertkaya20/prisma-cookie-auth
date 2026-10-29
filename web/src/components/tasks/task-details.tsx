@@ -21,7 +21,11 @@ export function TaskDetails({
     <dl className="divide-y divide-line rounded-xl border border-line bg-surface text-sm">
       <DetailRow label="Status">
         <span className="flex items-center gap-2">
-          <StatusMenu status={task.status} canEdit={canEdit} onChange={onChangeStatus} />
+          <StatusMenu
+            status={task.status}
+            canEdit={canEdit}
+            onChange={onChangeStatus}
+          />
           {statusLabel[task.status]}
         </span>
       </DetailRow>
@@ -48,10 +52,24 @@ export function TaskDetails({
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+export function DetailRow({
+  label,
+  alignTop = false,
+  children,
+}: {
+  label: string;
+  // İçerik birden fazla satır olabiliyorsa (atananlar gibi) etiket ilk satırın hizasında kalsın.
+  alignTop?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex min-h-12 items-center gap-4 px-4 py-2.5">
-      <dt className="w-24 shrink-0 text-ink-muted">{label}</dt>
+    <div
+      className={cn(
+        "flex min-h-12 gap-4 px-4 py-2.5",
+        alignTop ? "items-start" : "items-center",
+      )}
+    >
+      <dt className={cn("w-24 shrink-0 text-ink-muted", alignTop && "pt-0.5")}>{label}</dt>
       <dd className="min-w-0 flex-1">{children}</dd>
     </div>
   );
