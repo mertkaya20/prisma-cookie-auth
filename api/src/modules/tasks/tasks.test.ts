@@ -28,17 +28,24 @@ beforeEach(async () => {
     })
   ).id;
   alphaTagId = (
-    await db.tag.create({ data: { organizationId: alpha.organization.id, name: "acil" } })
+    await db.tag.create({
+      data: { organizationId: alpha.organization.id, name: "acil" },
+    })
   ).id;
   betaTagId = (
-    await db.tag.create({ data: { organizationId: beta.organization.id, name: "acil" } })
+    await db.tag.create({
+      data: { organizationId: beta.organization.id, name: "acil" },
+    })
   ).id;
 });
 
 const projectTasks = () => `/projects/${alpha.project.id}/tasks`;
 const task = (id = taskId) => `/tasks/${id}`;
 
-const createTask = (title: string, status: "todo" | "in_progress" | "done" = "todo") =>
+const createTask = (
+  title: string,
+  status: "todo" | "in_progress" | "done" = "todo",
+) =>
   db.task.create({
     data: {
       organizationId: alpha.organization.id,
@@ -52,12 +59,16 @@ const createTask = (title: string, status: "todo" | "in_progress" | "done" = "to
 describe("tenant isolation", () => {
   it("hides another organization's project", async () => {
     expect((await as(beta.owner).get(projectTasks())).status).toBe(404);
-    expect((await as(beta.owner).post(projectTasks()).send({ title: "x" })).status).toBe(404);
+    expect(
+      (await as(beta.owner).post(projectTasks()).send({ title: "x" })).status,
+    ).toBe(404);
   });
 
   it("hides another organization's task and leaves it untouched", async () => {
     expect((await as(beta.owner).get(task())).status).toBe(404);
-    expect((await as(beta.owner).patch(task()).send({ title: "hacked" })).status).toBe(404);
+    expect(
+      (await as(beta.owner).patch(task()).send({ title: "hacked" })).status,
+    ).toBe(404);
     expect((await as(beta.owner).delete(task())).status).toBe(404);
 
     const stored = await db.task.findUnique({ where: { id: taskId } });
@@ -68,7 +79,9 @@ describe("tenant isolation", () => {
     const assign = await as(beta.owner)
       .post(`${task()}/assignees`)
       .send({ userId: beta.contributor.user.id });
-    const tag = await as(beta.owner).post(`${task()}/tags`).send({ tagId: betaTagId });
+    const tag = await as(beta.owner)
+      .post(`${task()}/tags`)
+      .send({ tagId: betaTagId });
 
     expect(assign.status).toBe(404);
     expect(tag.status).toBe(404);
@@ -77,8 +90,16 @@ describe("tenant isolation", () => {
 
 describe("permissions inside the organization", () => {
   it("Y1: everyone in the organization can read", async () => {
-    for (const actor of [alpha.owner, alpha.manager, alpha.contributor, alpha.outsider]) {
-      expect((await as(actor).get(projectTasks())).status, actor.user.email).toBe(200);
+    for (const actor of [
+      alpha.owner,
+      alpha.manager,
+      alpha.contributor,
+      alpha.outsider,
+    ]) {
+      expect(
+        (await as(actor).get(projectTasks())).status,
+        actor.user.email,
+      ).toBe(200);
       expect((await as(actor).get(task())).status, actor.user.email).toBe(200);
     }
   });
@@ -89,7 +110,9 @@ describe("permissions inside the organization", () => {
       expect(res.status, actor.user.email).toBe(201);
     }
 
-    const res = await as(alpha.outsider).post(projectTasks()).send({ title: "new" });
+    const res = await as(alpha.outsider)
+      .post(projectTasks())
+      .send({ title: "new" });
     expect(res.status).toBe(403);
   });
 
@@ -114,7 +137,9 @@ describe("permissions inside the organization", () => {
 
   it("Y5: only the owner and the project manager can assign and unassign", async () => {
     const assign = (actor: typeof alpha.owner) =>
-      as(actor).post(`${task()}/assignees`).send({ userId: alpha.contributor.user.id });
+      as(actor)
+        .post(`${task()}/assignees`)
+        .send({ userId: alpha.contributor.user.id });
     const unassign = (actor: typeof alpha.owner) =>
       as(actor).delete(`${task()}/assignees/${alpha.contributor.user.id}`);
 
@@ -175,9 +200,21 @@ describe("business rules", () => {
     const managers = await createTask("G3");
     await db.taskAssignee.createMany({
       data: [
-        { organizationId: alpha.organization.id, taskId, userId: alpha.contributor.user.id },
-        { organizationId: alpha.organization.id, taskId: inProgress.id, userId: alpha.contributor.user.id },
-        { organizationId: alpha.organization.id, taskId: managers.id, userId: alpha.manager.user.id },
+        {
+          organizationId: alpha.organization.id,
+          taskId,
+          userId: alpha.contributor.user.id,
+        },
+        {
+          organizationId: alpha.organization.id,
+          taskId: inProgress.id,
+          userId: alpha.contributor.user.id,
+        },
+        {
+          organizationId: alpha.organization.id,
+          taskId: managers.id,
+          userId: alpha.manager.user.id,
+        },
       ],
     });
     const titles = (res: { body: { tasks: { title: string }[] } }) =>
@@ -186,7 +223,9 @@ describe("business rules", () => {
     const mine = await as(alpha.contributor).get("/tasks/assigned-to-me");
     expect(titles(mine)).toEqual(["G1", "G2"]);
 
-    const filtered = await as(alpha.contributor).get("/tasks/assigned-to-me?status=in_progress");
+    const filtered = await as(alpha.contributor).get(
+      "/tasks/assigned-to-me?status=in_progress",
+    );
     expect(titles(filtered)).toEqual(["G2"]);
 
     const nothing = await as(alpha.outsider).get("/tasks/assigned-to-me");
@@ -194,7 +233,9 @@ describe("business rules", () => {
   });
 
   it("K4: invalid input is rejected and nothing is written", async () => {
-    const blankTitle = await as(alpha.contributor).post(projectTasks()).send({ title: "   " });
+    const blankTitle = await as(alpha.contributor)
+      .post(projectTasks())
+      .send({ title: "   " });
     expect(blankTitle.status).toBe(400);
     expect(await db.task.count()).toBe(1);
 
@@ -203,14 +244,37 @@ describe("business rules", () => {
   });
 
   it("K5: a task comes with its creator, assignees and tags, without password hashes", async () => {
-    await as(alpha.manager).post(`${task()}/assignees`).send({ userId: alpha.contributor.user.id });
-    await as(alpha.contributor).post(`${task()}/tags`).send({ tagId: alphaTagId });
+    await as(alpha.manager)
+      .post(`${task()}/assignees`)
+      .send({ userId: alpha.contributor.user.id });
+    await as(alpha.contributor)
+      .post(`${task()}/tags`)
+      .send({ tagId: alphaTagId });
 
     const res = await as(alpha.outsider).get(task());
 
     expect(res.body.task.createdBy.email).toBe(alpha.owner.user.email);
-    expect(res.body.task.assignees[0].user.email).toBe(alpha.contributor.user.email);
+    expect(res.body.task.assignees[0].user.email).toBe(
+      alpha.contributor.user.email,
+    );
     expect(res.body.task.tags[0].tag.name).toBe("acil");
+    expect(JSON.stringify(res.body)).not.toContain("passwordHash");
+  });
+  it("K6: the task list comes with creators, assignees and tags, without password hashes", async () => {
+    await as(alpha.manager)
+      .post(`${task()}/assignees`)
+      .send({ userId: alpha.contributor.user.id });
+    await as(alpha.contributor)
+      .post(`${task()}/tags`)
+      .send({ tagId: alphaTagId });
+
+    const res = await as(alpha.outsider).get(projectTasks());
+
+    expect(res.body.tasks[0].createdBy.email).toBe(alpha.owner.user.email);
+    expect(res.body.tasks[0].assignees[0].user.email).toBe(
+      alpha.contributor.user.email,
+    );
+    expect(res.body.tasks[0].tags[0].tag.name).toBe("acil");
     expect(JSON.stringify(res.body)).not.toContain("passwordHash");
   });
 });

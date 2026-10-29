@@ -41,6 +41,7 @@ export const listTasks = async (
 
   return db.task.findMany({
     where: { organizationId: user.organizationId, projectId, status },
+    include: taskInclude,
     orderBy: { createdAt: "desc" },
   });
 };

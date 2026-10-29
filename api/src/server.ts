@@ -17,6 +17,7 @@ import {
   commentsRouter,
   taskCommentsRouter,
 } from "./modules/comments/comments.routes.js";
+import cors from "cors";
 
 export const server = express();
 if (config.trustProxy > 0) {
@@ -25,6 +26,7 @@ if (config.trustProxy > 0) {
 
 server.disable("x-powered-by");
 
+server.use(cors({ origin: config.corsOrigin, credentials: true }));
 server.use(express.json());
 server.use(cookieParser());
 
