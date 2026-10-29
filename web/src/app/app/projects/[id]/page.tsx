@@ -14,17 +14,23 @@ import {
 import { TaskBoard, TaskBoardSkeleton } from "@/components/tasks/task-board";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { queryKeys } from "@/lib/query-keys";
 import { useMe } from "@/lib/session";
 import type { Member, Project, Task, TaskStatus } from "@/lib/types";
 
+// Üst menüdeki aktif link ile aynı görünüm: seçili sekmenin altında koyu çizgi.
+const tabTriggerClass =
+  "h-8 flex-none rounded-none px-0 text-ink-muted hover:text-ink data-active:text-ink group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-1px] after:rounded-full after:bg-ink";
+
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const me = useMe();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tab, setTab] = useState<"board" | "team">("board");
 
   const projectQuery = useQuery({
     queryKey: queryKeys.project(id),
@@ -148,7 +154,9 @@ export default function ProjectPage() {
         title={project.name}
         description={project.description ?? undefined}
         actions={
-          canEdit && (
+          // "New task" sadece board'dayken anlamlı; Team sekmesinin kendi "Add member" butonu olacak.
+          canEdit &&
+          tab === "board" && (
             <Button onClick={openDialog}>
               <PlusIcon data-icon="inline-start" />
               New task
@@ -157,31 +165,63 @@ export default function ProjectPage() {
         }
       />
 
-      {updateStatus.error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>
-            Couldn&apos;t update the task. {getErrorMessage(updateStatus.error)}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Seçili olmayan sekmenin içeriği DOM'dan kaldırılır (modal değil, aynı yerde içerik değişir). */}
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value as "board" | "team")}
+        className="gap-6"
+      >
+        <TabsList
+          variant="line"
+          className="h-auto w-full justify-start gap-6 rounded-none border-b border-line p-0"
+        >
+          <TabsTrigger value="board" className={tabTriggerClass}>
+            Board
+          </TabsTrigger>
+          <TabsTrigger value="team" className={tabTriggerClass}>
+            Team
+            {membersQuery.data && (
+              <span className="text-ink-muted tabular-nums">
+                {membersQuery.data.members.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {tasksQuery.isPending ? (
-        <TaskBoardSkeleton />
-      ) : tasksQuery.error ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {getErrorMessage(tasksQuery.error)}
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <TaskBoard
-          tasks={tasksQuery.data.tasks}
-          canEdit={canEdit}
-          onChangeStatus={(task, status) =>
-            updateStatus.mutate({ taskId: task.id, status })
-          }
-        />
-      )}
+        <TabsContent value="board">
+          {updateStatus.error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>
+                Couldn&apos;t update the task.{" "}
+                {getErrorMessage(updateStatus.error)}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {tasksQuery.isPending ? (
+            <TaskBoardSkeleton />
+          ) : tasksQuery.error ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {getErrorMessage(tasksQuery.error)}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <TaskBoard
+              tasks={tasksQuery.data.tasks}
+              canEdit={canEdit}
+              onChangeStatus={(task, status) =>
+                updateStatus.mutate({ taskId: task.id, status })
+              }
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="team">
+          {/* 7.6d: TeamSection buraya gelecek. */}
+          <p className="text-ink-muted">Team comes here.</p>
+        </TabsContent>
+      </Tabs>
 
       <NewTaskDialog
         open={dialogOpen}
