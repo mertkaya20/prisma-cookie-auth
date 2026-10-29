@@ -1,11 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeftIcon, PlusIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  EllipsisIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog";
+import {
+  EditProjectDialog,
+  type EditProjectValues,
+} from "@/components/projects/edit-project-dialog";
 import { TeamSection } from "@/components/projects/team-section";
 import { EmptyState } from "@/components/page-state";
 import {
@@ -15,6 +26,12 @@ import {
 import { TaskBoard, TaskBoardSkeleton } from "@/components/tasks/task-board";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
@@ -35,9 +52,12 @@ const tabTriggerClass =
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const me = useMe();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [tab, setTab] = useState<"board" | "team">("board");
 
   const projectQuery = useQuery({
@@ -98,6 +118,33 @@ export default function ProjectPage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projectTasks(id) });
+    },
+  });
+
+  const updateProject = useMutation({
+    mutationFn: (body: EditProjectValues) =>
+      api<{ project: Project }>(`/projects/${id}`, { method: "PATCH", body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.project(id) });
+      // exact: sadece liste. Olmasa ["projects"] ile başlayan her şey (bu projenin görevleri, takımı) da yenilenirdi.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects,
+        exact: true,
+      });
+      setEditOpen(false);
+    },
+  });
+
+  const deleteProject = useMutation({
+    mutationFn: () => api(`/projects/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      // exact önemli: silinmiş projenin kendi sorguları yenilenirse 404 alır ve
+      // sayfa, yönlendirme bitmeden bir anlığına "Project not found" gösterir.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projects,
+        exact: true,
+      });
+      router.replace("/app/projects");
     },
   });
 
@@ -203,14 +250,52 @@ export default function ProjectPage() {
         title={project.name}
         description={project.description ?? undefined}
         actions={
-          // "New task" sadece board'dayken anlamlı; Team sekmesinin kendi "Add member" butonu olacak.
-          canEdit &&
-          tab === "board" && (
-            <Button onClick={openDialog}>
-              <PlusIcon data-icon="inline-start" />
-              New task
-            </Button>
-          )
+          <>
+            {canEdit && tab === "board" && (
+              <Button onClick={openDialog}>
+                <PlusIcon data-icon="inline-start" />
+                New task
+              </Button>
+            )}
+
+            {/* Projeyi düzenlemek ve silmek sadece owner'ın (API'de requireRole("owner")). */}
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-lg"
+                      aria-label="Project actions"
+                    />
+                  }
+                >
+                  <EllipsisIcon />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      updateProject.reset();
+                      setEditOpen(true);
+                    }}
+                  >
+                    <PencilIcon />
+                    Edit project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => {
+                      deleteProject.reset();
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2Icon />
+                    Delete project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </>
         }
       />
 
@@ -268,7 +353,10 @@ export default function ProjectPage() {
 
         <TabsContent value="team">
           {membersQuery.isPending ? (
-            <div aria-hidden className="h-48 animate-pulse rounded-xl bg-wash" />
+            <div
+              aria-hidden
+              className="h-48 animate-pulse rounded-xl bg-wash"
+            />
           ) : membersQuery.error ? (
             <Alert variant="destructive">
               <AlertDescription>
@@ -305,6 +393,29 @@ export default function ProjectPage() {
         pending={createTask.isPending}
         error={createTask.error ? getErrorMessage(createTask.error) : null}
         onSubmit={(values) => createTask.mutate(values)}
+      />
+
+      <EditProjectDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        project={project}
+        pending={updateProject.isPending}
+        error={
+          updateProject.error ? getErrorMessage(updateProject.error) : null
+        }
+        onSubmit={(values) => updateProject.mutate(values)}
+      />
+
+      <DeleteProjectDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        projectName={project.name}
+        taskCount={tasksQuery.data?.tasks.length}
+        pending={deleteProject.isPending}
+        error={
+          deleteProject.error ? getErrorMessage(deleteProject.error) : null
+        }
+        onConfirm={() => deleteProject.mutate()}
       />
     </>
   );
