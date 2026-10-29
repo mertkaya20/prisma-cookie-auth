@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeftIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
 import { EmptyState } from "@/components/page-state";
 import { DeleteTaskDialog } from "@/components/tasks/delete-task-dialog";
 import {
@@ -18,7 +24,14 @@ import { api, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { queryKeys } from "@/lib/query-keys";
 import { useMe } from "@/lib/session";
-import type { Member, Project, Task, TaskStatus, User } from "@/lib/types";
+import type {
+  Member,
+  Project,
+  TagSummary,
+  Task,
+  TaskStatus,
+  User,
+} from "@/lib/types";
 import {
   Dialog,
   DialogClose,
@@ -28,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TagChip } from "@/components/tag-chip";
 
 export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
@@ -107,6 +121,40 @@ export default function TaskPage() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.task(id),
       });
+      if (projectId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projectTasks(projectId),
+        });
+      }
+    },
+  });
+
+  const tagsQuery = useQuery({
+    queryKey: queryKeys.tags,
+    queryFn: () => api<{ tags: TagSummary[] }>("/tags"),
+  });
+
+  const addTag = useMutation({
+    mutationFn: (tagId: string) =>
+      api<{ task: Task }>(`/tasks/${id}/tags`, {
+        method: "POST",
+        body: { tagId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(id) });
+      if (projectId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.projectTasks(projectId),
+        });
+      }
+    },
+  });
+
+  const removeTag = useMutation({
+    mutationFn: (tagId: string) =>
+      api(`/tasks/${id}/tags/${tagId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(id) });
       if (projectId) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.projectTasks(projectId),
@@ -228,6 +276,19 @@ export default function TaskPage() {
                 : null
             }
           />
+          <TagsSection
+            tags={task.tags}
+            orgTags={tagsQuery.data?.tags ?? []}
+            canEdit={canEdit}
+            onAddTag={(tagId) => addTag.mutate(tagId)}
+            onRemoveTag={(tagId) => removeTag.mutate(tagId)}
+            pending={addTag.isPending || removeTag.isPending}
+            error={
+              addTag.error || removeTag.error
+                ? getErrorMessage(addTag.error ?? removeTag.error)
+                : null
+            }
+          />
           {canDelete && (
             <Button
               variant="ghost"
@@ -292,10 +353,15 @@ function AssigneesSection({
           ) : (
             <ul className="flex flex-col gap-2">
               {assignees.map((a) => (
-                <li key={a.user.id} className="flex items-start justify-between gap-2">
+                <li
+                  key={a.user.id}
+                  className="flex items-start justify-between gap-2"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{a.user.name}</p>
-                    <p className="truncate text-xs text-ink-muted">{a.user.email}</p>
+                    <p className="truncate text-xs text-ink-muted">
+                      {a.user.email}
+                    </p>
                   </div>
                   {canAssign && (
                     <button
@@ -332,7 +398,9 @@ function AssigneesSection({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="gap-5 p-6 sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">Assign people</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">
+                Assign people
+              </DialogTitle>
               <DialogDescription>
                 Only people on the project team can be assigned.
               </DialogDescription>
@@ -345,7 +413,9 @@ function AssigneesSection({
             ) : (
               <ul className="-mx-2 flex max-h-80 flex-col overflow-y-auto">
                 {members.map((m) => {
-                  const isAssigned = assignees.some((a) => a.user.id === m.userId);
+                  const isAssigned = assignees.some(
+                    (a) => a.user.id === m.userId,
+                  );
                   return (
                     <li
                       key={m.userId}
@@ -353,10 +423,14 @@ function AssigneesSection({
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium">{m.user.name}</p>
-                        <p className="truncate text-xs text-ink-muted">{m.user.email}</p>
+                        <p className="truncate text-xs text-ink-muted">
+                          {m.user.email}
+                        </p>
                       </div>
                       {isAssigned ? (
-                        <span className="shrink-0 text-xs text-ink-muted">Already assigned</span>
+                        <span className="shrink-0 text-xs text-ink-muted">
+                          Already assigned
+                        </span>
                       ) : (
                         <Button
                           size="sm"
@@ -380,6 +454,127 @@ function AssigneesSection({
               </Alert>
             )}
 
+            <DialogFooter className="-mx-6 -mb-6 px-6 py-4">
+              <DialogClose render={<Button type="button" />}>Done</DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </DetailRow>
+    </dl>
+  );
+}
+
+function TagsSection({
+  tags,
+  orgTags,
+  canEdit,
+  onAddTag,
+  onRemoveTag,
+  pending,
+  error,
+}: {
+  tags: { tag: TagSummary }[];
+  orgTags: TagSummary[];
+  canEdit: boolean;
+  onAddTag: (tagId: string) => void;
+  onRemoveTag: (tagId: string) => void;
+  pending: boolean;
+  error: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <dl className="rounded-xl border border-line bg-surface text-sm">
+      <DetailRow label="Tags" alignTop>
+        <div className="flex flex-col gap-2 py-0.5">
+          {tags.length === 0 ? (
+            <p className="text-ink-muted">No tags</p>
+          ) : (
+            <ul className="flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <li key={t.tag.id} className="flex items-center gap-0.5">
+                  <TagChip name={t.tag.name} color={t.tag.color} />
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveTag(t.tag.id)}
+                      disabled={pending}
+                      aria-label={`Remove ${t.tag.name}`}
+                      className="shrink-0 rounded p-0.5 text-ink-muted outline-none hover:bg-wash hover:text-ink focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+                    >
+                      <XIcon className="size-3.5" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-2.5 self-start"
+              onClick={() => setOpen(true)}
+            >
+              <PlusIcon data-icon="inline-start" />
+              Add tag
+            </Button>
+          )}
+
+          {error && !open && <p className="text-xs text-danger">{error}</p>}
+        </div>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="gap-5 p-6 sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">
+                Add tag
+              </DialogTitle>
+              <DialogDescription>
+                Tags are shared across your organization.
+              </DialogDescription>
+            </DialogHeader>
+            {orgTags.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-ink-muted">
+                Your organization has no tags yet.
+              </p>
+            ) : (
+              <ul className="-mx-2 flex max-h-80 flex-col overflow-y-auto">
+                {orgTags.map((ot) => {
+                  const isAdded = tags.some((t) => t.tag.id === ot.id);
+
+                  return (
+                    <li
+                      key={ot.id}
+                      className="flex items-center justify-between gap-3 rounded-lg px-2 py-2"
+                    >
+                      <TagChip name={ot.name} color={ot.color} />
+                      {isAdded ? (
+                        <span className="shrink-0 text-xs text-ink-muted">
+                          Added
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0"
+                          disabled={pending}
+                          onClick={() => onAddTag(ot.id)}
+                        >
+                          Add
+                        </Button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <DialogFooter className="-mx-6 -mb-6 px-6 py-4">
               <DialogClose render={<Button type="button" />}>Done</DialogClose>
             </DialogFooter>
