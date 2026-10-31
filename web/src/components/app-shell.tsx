@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import { CheckIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { CheckIcon, KeyRoundIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { Logo } from "@/components/logo";
 import {
   DropdownMenu,
@@ -44,6 +46,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <div className="min-h-screen">
@@ -128,6 +131,10 @@ export function AppShell({
                 <p className="mt-1 text-xs text-ink-muted">{roleLabel[user.role]}</p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setPasswordOpen(true)}>
+                <KeyRoundIcon />
+                Change password
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={onLogout} disabled={loggingOut}>
                 <LogOutIcon />
                 {loggingOut ? "Logging out..." : "Log out"}
@@ -146,6 +153,8 @@ export function AppShell({
       )}
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
+
+      <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
     </div>
   );
 }
