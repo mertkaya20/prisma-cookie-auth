@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as authController from "./auth.controller.js";
 import { requireAuth } from "./auth.middleware.js";
 import {
+  changePasswordLimiter,
   loginLimiter,
   registerLimiter,
 } from "../../shared/middleware/rate-limit.middleware.js";
@@ -20,3 +21,10 @@ authRouter.post("/login", loginLimiter, authController.login);
 authRouter.post("/logout", authController.logout);
 
 authRouter.get("/me", requireAuth, authController.me);
+
+authRouter.post(
+  "/password",
+  requireAuth,
+  changePasswordLimiter,
+  authController.changePassword,
+);
