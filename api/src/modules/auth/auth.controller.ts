@@ -1,8 +1,12 @@
 import type { CookieOptions, RequestHandler, Response } from "express";
-import { loginSchema, registerSchema } from "./auth.schema.js";
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSchema,
+} from "./auth.schema.js";
 import * as authService from "./auth.service.js";
 import { config } from "../../shared/config.js";
-import { SESSION_COOKIE } from "./auth.middleware.js";
+import { getAuthUser, SESSION_COOKIE } from "./auth.middleware.js";
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
@@ -47,4 +51,14 @@ export const logout: RequestHandler = async (req, res) => {
 
 export const me: RequestHandler = (req, res) => {
   res.json({ user: req.user });
+};
+
+export const changePassword: RequestHandler = async (req, res) => {
+  const parsedData = changePasswordSchema.parse(req.body);
+  const user = getAuthUser(req);
+
+  const token = await authService.changePassword(user.id, parsedData);
+
+  setSessionCookie(res, token);
+  res.status(204).end();
 };

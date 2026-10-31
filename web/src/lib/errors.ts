@@ -8,6 +8,8 @@ const messages: Record<string, string> = {
   EMAIL_TAKEN: "An account with this email already exists. Log in instead.",
   VALIDATION_ERROR: "Some fields are not valid. Check them and try again.",
   UNAUTHORIZED: "Your session has ended. Log in again.",
+  INVALID_CURRENT_PASSWORD: "Your current password is wrong.",
+  SAME_PASSWORD: "Choose a password that's different from your current one.",
   FORBIDDEN: "You don't have permission to do that.",
   NOT_FOUND: "This item doesn't exist or was deleted.",
   PROJECT_NAME_TAKEN: "A project with this name already exists. Choose another name.",

@@ -1,14 +1,20 @@
 import bcrypt from "bcryptjs";
 import { db } from "../../shared/db.js";
-import { loginSchema, registerSchema } from "./auth.schema.js";
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSchema,
+} from "./auth.schema.js";
 import { z } from "zod";
 import { Prisma } from "../../generated/prisma/client.js";
-import { AppError } from "../../shared/errors.js";
+import { AppError, UnauthorizedError } from "../../shared/errors.js";
 import { createHash, randomBytes } from "node:crypto";
 
 type RegisterInput = z.infer<typeof registerSchema>;
 
 type LoginInput = z.infer<typeof loginSchema>;
+
+type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 export const userSelect = {
   id: true,
@@ -159,6 +165,54 @@ export const getSessionUser = async (token: string) => {
   if (session.user.organization.status === "suspended") return null;
 
   return toPublicUser(session.user);
+};
+
+export const changePassword = async (
+  userId: string,
+  input: ChangePasswordInput,
+) => {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { passwordHash: true },
+  });
+
+  if (!user) throw new UnauthorizedError();
+
+  const isMatch = await bcrypt.compare(
+    input.currentPassword,
+    user.passwordHash,
+  );
+
+  if (!isMatch) {
+    throw new AppError(
+      400,
+      "INVALID_CURRENT_PASSWORD",
+      "Current password is wrong",
+    );
+  }
+
+  const isSame = input.currentPassword === input.newPassword;
+
+  if (isSame) {
+    throw new AppError(
+      400,
+      "SAME_PASSWORD",
+      "New password must be different from the current one",
+    );
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+
+  await db.$transaction([
+    db.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    }),
+
+    db.session.deleteMany({ where: { userId } }),
+  ]);
+
+  return await createSession(userId);
 };
 
 export type SessionUser = ReturnType<typeof toPublicUser>;

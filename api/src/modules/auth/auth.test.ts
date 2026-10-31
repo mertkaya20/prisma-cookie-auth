@@ -241,3 +241,102 @@ describe("POST /auth/logout", () => {
     expect((await me(phone)).status).toBe(200);
   });
 });
+
+describe("POST /auth/password", () => {
+  let cookie: string;
+  const newPassword = "new-password-123";
+
+  beforeEach(async () => {
+    cookie = sessionCookie(
+      await request(server).post("/auth/register").send(owner),
+    );
+  });
+
+  const changePassword = (cookie: string | undefined, body: object) => {
+    const req = request(server).post("/auth/password").send(body);
+    return cookie ? req.set("Cookie", cookie) : req;
+  };
+
+  const loginWith = (password: string) =>
+    request(server).post("/auth/login").send({ email: owner.email, password });
+
+  it("S1: changes the password and keeps me logged in with a new session", async () => {
+    const res = await changePassword(cookie, {
+      currentPassword: owner.password,
+      newPassword,
+    });
+
+    expect(res.status).toBe(204);
+    const newCookie = sessionCookie(res);
+    expect((await me(newCookie)).status).toBe(200);
+
+    expect((await loginWith(owner.password)).status).toBe(401);
+    expect((await loginWith(newPassword)).status).toBe(200);
+  });
+
+  it("S2: rejects a wrong current password and keeps the old one", async () => {
+    const res = await changePassword(cookie, {
+      currentPassword: "wrong-password",
+      newPassword,
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("INVALID_CURRENT_PASSWORD");
+    expect(res.get("Set-Cookie")).toBeUndefined();
+    expect((await me(cookie)).status).toBe(200);
+    expect((await loginWith(owner.password)).status).toBe(200);
+  });
+
+  it("S3: rejects a short new password", async () => {
+    const res = await changePassword(cookie, {
+      currentPassword: owner.password,
+      newPassword: "short",
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.get("Set-Cookie")).toBeUndefined();
+    expect((await me(cookie)).status).toBe(200);
+    expect((await loginWith(owner.password)).status).toBe(200);
+  });
+
+  it("S4: rejects a request without a cookie", async () => {
+    const res = await changePassword(undefined, {
+      currentPassword: owner.password,
+      newPassword,
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHORIZED");
+    expect(res.get("Set-Cookie")).toBeUndefined();
+    expect((await me(cookie)).status).toBe(200);
+    expect((await loginWith(owner.password)).status).toBe(200);
+  });
+
+  it("S5: ends every other session and gives this device a new one", async () => {
+    const laptop = cookie;
+    const phone = sessionCookie(await loginWith(owner.password));
+
+    const res = await changePassword(laptop, {
+      currentPassword: owner.password,
+      newPassword,
+    });
+    expect(res.status).toBe(204);
+    expect((await me(laptop)).status).toBe(401);
+    expect((await me(phone)).status).toBe(401);
+    expect((await me(sessionCookie(res))).status).toBe(200);
+  });
+
+  it("S6: rejects a new password that is the same as the current one", async () => {
+    const res = await changePassword(cookie, {
+      currentPassword: owner.password,
+      newPassword: owner.password,
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("SAME_PASSWORD");
+    expect(res.get("Set-Cookie")).toBeUndefined();
+    expect((await me(cookie)).status).toBe(200);
+    expect((await loginWith(owner.password)).status).toBe(200);
+  });
+});
