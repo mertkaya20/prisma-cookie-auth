@@ -5,6 +5,7 @@ import {
   registerSchema,
 } from "./auth.schema.js";
 import * as authService from "./auth.service.js";
+import * as demoService from "../demo/demo.service.js";
 import { config } from "../../shared/config.js";
 import { getAuthUser, SESSION_COOKIE } from "./auth.middleware.js";
 
@@ -25,6 +26,13 @@ const setSessionCookie = (res: Response, token: string) => {
 export const register: RequestHandler = async (req, res) => {
   const parsedData = registerSchema.parse(req.body);
   const { token, user } = await authService.register(parsedData);
+
+  setSessionCookie(res, token);
+  res.status(201).json({ user });
+};
+
+export const demo: RequestHandler = async (_req, res) => {
+  const { token, user } = await demoService.createDemo();
 
   setSessionCookie(res, token);
   res.status(201).json({ user });

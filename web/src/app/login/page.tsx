@@ -13,7 +13,12 @@ import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { queryKeys } from "@/lib/query-keys";
 import type { User } from "@/lib/types";
-import { useMe } from "@/lib/session";
+import {
+  DEMO_NOTE,
+  DEMO_WAKING_NOTE,
+  useMe,
+  useTryDemo,
+} from "@/lib/session";
 import { LoadingScreen } from "@/components/page-state";
 
 export default function LoginPage() {
@@ -22,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const me = useMe();
   const queryClient = useQueryClient();
+  const demo = useTryDemo();
 
   useEffect(() => {
     if (me.data) router.replace("/app");
@@ -46,7 +52,8 @@ export default function LoginPage() {
     mutate({ email, password });
   }
 
-  if (me.isPending || me.data) {
+  // Oturum beklenirken form gösterilir (Render uyuyor olabilir); giriş yapmışsa yönlendirme sürer.
+  if (me.data) {
     return <LoadingScreen />;
   }
 
@@ -101,6 +108,30 @@ export default function LoginPage() {
           {isPending ? "Logging in..." : "Log in"}
         </Button>
       </form>
+
+      <div className="mt-6 flex items-center gap-3 text-xs text-ink-muted">
+        <span className="h-px flex-1 bg-line" />
+        or
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
+      <Button
+        variant="outline"
+        size="lg"
+        disabled={demo.isPending}
+        onClick={() => demo.mutate()}
+        className="mt-6 w-full"
+      >
+        {demo.isPending ? "Setting up your demo..." : "Try the demo"}
+      </Button>
+      <p className="mt-2 text-sm text-ink-muted">
+        {demo.isPending ? DEMO_WAKING_NOTE : DEMO_NOTE}
+      </p>
+      {demo.error && (
+        <Alert variant="destructive" className="mt-3">
+          <AlertDescription>{getErrorMessage(demo.error)}</AlertDescription>
+        </Alert>
+      )}
     </AuthShell>
   );
 }
