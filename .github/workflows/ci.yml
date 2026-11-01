@@ -49,7 +49,7 @@ jobs:
       run:
         working-directory: web
     env:
-      NEXT_PUBLIC_API_URL: http://localhost:4001
+      API_URL: http://localhost:4001
 
     steps:
       - uses: actions/checkout@v5
