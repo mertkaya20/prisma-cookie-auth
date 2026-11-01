@@ -1,0 +1,5 @@
+{
+  // Sadece yayına giden kod: testler ve test yardımcıları dist/'e girmez.
+  "extends": "./tsconfig.json",
+  "exclude": ["src/**/*.test.ts", "src/shared/test"]
+}

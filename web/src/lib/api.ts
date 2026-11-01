@@ -13,7 +13,8 @@ export async function api<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+  // Hep kendi sitemize: next.config.ts'teki rewrite API'ye iletir (aynı site → cookie gider).
+  const res = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
     credentials: "include",
     headers:
