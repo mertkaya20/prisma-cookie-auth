@@ -12,7 +12,8 @@ const messages: Record<string, string> = {
   SAME_PASSWORD: "Choose a password that's different from your current one.",
   FORBIDDEN: "You don't have permission to do that.",
   NOT_FOUND: "This item doesn't exist or was deleted.",
-  PROJECT_NAME_TAKEN: "A project with this name already exists. Choose another name.",
+  PROJECT_NAME_TAKEN:
+    "A project with this name already exists. Choose another name.",
   TAG_NAME_TAKEN: "A tag with this name already exists.",
   TAG_NOT_FOUND: "This tag doesn't exist anymore.",
   TAG_ALREADY_ADDED: "This tag is already on the task.",
@@ -20,6 +21,9 @@ const messages: Record<string, string> = {
   ALREADY_ASSIGNED: "This person is already assigned.",
   USER_NOT_FOUND: "This person isn't in your organization.",
   USER_ALREADY_PROJECT_MEMBER: "This person is already on the team.",
+  USER_DEACTIVATED:
+    "This account is deactivated. An owner can turn it back on from the People page.",
+  CANNOT_DEACTIVATE_SELF: "You can't deactivate your own account.",
 };
 
 export function getErrorMessage(error: unknown): string {

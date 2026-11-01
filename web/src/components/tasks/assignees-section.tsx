@@ -1,4 +1,5 @@
 import { PlusIcon, XIcon } from "lucide-react";
+import { DeactivatedLabel } from "@/components/deactivated-label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ export function AssigneesSection({
   assignees,
   canAssign,
   members,
+  meId,
   onAssign,
   onUnassign,
   pending,
@@ -26,6 +28,7 @@ export function AssigneesSection({
   assignees: { user: User }[];
   canAssign: boolean;
   members: Member[];
+  meId: string | undefined;
   onAssign: (userId: string) => void;
   onUnassign: (userId: string) => void;
   pending: boolean;
@@ -46,7 +49,13 @@ export function AssigneesSection({
                   className="flex items-start justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{a.user.name}</p>
+                    <p className="font-medium wrap-break-word">
+                      {a.user.name}
+                      {a.user.id === meId && (
+                        <span className="font-normal text-ink-muted"> (you)</span>
+                      )}
+                      {a.user.deactivatedAt && <DeactivatedLabel />}
+                    </p>
                     <p className="truncate text-xs text-ink-muted">
                       {a.user.email}
                     </p>
@@ -110,7 +119,15 @@ export function AssigneesSection({
                       className="flex items-center justify-between gap-3 rounded-lg px-2 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium">{m.user.name}</p>
+                        <p className="truncate font-medium">
+                          {m.user.name}
+                          {m.userId === meId && (
+                            <span className="font-normal text-ink-muted">
+                              {" "}
+                              (you)
+                            </span>
+                          )}
+                        </p>
                         <p className="truncate text-xs text-ink-muted">
                           {m.user.email}
                         </p>
@@ -118,6 +135,10 @@ export function AssigneesSection({
                       {isAssigned ? (
                         <span className="shrink-0 text-xs text-ink-muted">
                           Already assigned
+                        </span>
+                      ) : m.user.deactivatedAt ? (
+                        <span className="shrink-0 text-xs text-ink-muted">
+                          Deactivated
                         </span>
                       ) : (
                         <Button

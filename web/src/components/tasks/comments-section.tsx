@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DeactivatedLabel } from "@/components/deactivated-label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { formatCommentTime, initials } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
+import { cn } from "@/lib/utils";
 import type { TaskComment } from "@/lib/types";
 
 /*
@@ -129,14 +131,22 @@ export function CommentsSection({
               <li key={comment.id} className="flex gap-3">
                 <span
                   aria-hidden
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink text-[0.6875rem] font-semibold text-white"
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-semibold",
+                    comment.author.deactivatedAt
+                      ? "border border-dashed border-ink-muted text-ink-muted"
+                      : "bg-ink text-white",
+                  )}
                 >
                   {initials(comment.author.name)}
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <span className="font-medium">{comment.author.name}</span>
+                    <span className="font-medium">
+                      {comment.author.name}
+                      {comment.author.deactivatedAt && <DeactivatedLabel />}
+                    </span>
                     <time
                       dateTime={comment.createdAt}
                       className="text-xs text-ink-muted"
