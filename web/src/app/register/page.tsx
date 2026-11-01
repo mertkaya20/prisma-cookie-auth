@@ -60,7 +60,8 @@ export default function RegisterPage() {
     register.mutate(form);
   }
 
-  if (me.isPending || me.data) {
+  // Oturum beklenirken form gösterilir (Render uyuyor olabilir); giriş yapmışsa yönlendirme sürer.
+  if (me.data) {
     return <LoadingScreen />;
   }
 
