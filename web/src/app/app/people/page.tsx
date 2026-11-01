@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { DeactivatedLabel } from "@/components/deactivated-label";
+import { YouLabel } from "@/components/you-label";
 import { PageHeader } from "@/components/page-header";
 import {
   AddPersonDialog,
@@ -133,9 +134,7 @@ export default function PeoplePage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {person.name}
-                  {person.id === me.data?.user.id && (
-                    <span className="font-normal text-ink-muted"> (you)</span>
-                  )}
+                  {person.id === me.data?.user.id && <YouLabel />}
                   {person.deactivatedAt && <DeactivatedLabel />}
                 </p>
                 <p className="truncate text-xs text-ink-muted">{person.email}</p>

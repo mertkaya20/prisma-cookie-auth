@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeactivatedLabel } from "@/components/deactivated-label";
+import { YouLabel } from "@/components/you-label";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Member, ProjectRole, User } from "@/lib/types";
@@ -128,9 +129,7 @@ export function TeamSection({
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {m.user.name}
-                  {m.userId === meId && (
-                    <span className="font-normal text-ink-muted"> (you)</span>
-                  )}
+                  {m.userId === meId && <YouLabel />}
                   {m.user.deactivatedAt && <DeactivatedLabel />}
                 </p>
                 <p className="truncate text-xs text-ink-muted">

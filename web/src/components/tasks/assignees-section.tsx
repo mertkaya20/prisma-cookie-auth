@@ -1,5 +1,6 @@
 import { PlusIcon, XIcon } from "lucide-react";
 import { DeactivatedLabel } from "@/components/deactivated-label";
+import { YouLabel } from "@/components/you-label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,9 +52,7 @@ export function AssigneesSection({
                   <div className="min-w-0">
                     <p className="font-medium wrap-break-word">
                       {a.user.name}
-                      {a.user.id === meId && (
-                        <span className="font-normal text-ink-muted"> (you)</span>
-                      )}
+                      {a.user.id === meId && <YouLabel />}
                       {a.user.deactivatedAt && <DeactivatedLabel />}
                     </p>
                     <p className="truncate text-xs text-ink-muted">
@@ -121,12 +120,7 @@ export function AssigneesSection({
                       <div className="min-w-0">
                         <p className="truncate font-medium">
                           {m.user.name}
-                          {m.userId === meId && (
-                            <span className="font-normal text-ink-muted">
-                              {" "}
-                              (you)
-                            </span>
-                          )}
+                          {m.userId === meId && <YouLabel />}
                         </p>
                         <p className="truncate text-xs text-ink-muted">
                           {m.user.email}
