@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { server } from "../../server.js";
 import { db } from "../../shared/db.js";
+import { sessionCookie } from "../../shared/test/fixtures.js";
 
 describe("POST /auth/register", () => {
   const input = {
@@ -139,11 +140,6 @@ const owner = {
 };
 
 // "taskapp_session=<token>; Path=/; HttpOnly; ..." → "taskapp_session=<token>"
-const sessionCookie = (res: request.Response) => {
-  const cookie = res.get("Set-Cookie")?.[0];
-  if (!cookie) throw new Error("session cookie not set");
-  return cookie.split(";")[0]!;
-};
 
 const me = (cookie?: string) => {
   const req = request(server).get("/auth/me");

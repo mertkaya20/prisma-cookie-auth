@@ -5,6 +5,7 @@ export type User = {
   name: string;
   role: "owner" | "member";
   organizationId: string;
+  deactivatedAt: string | null;
 };
 
 export type TaskStatus = "todo" | "in_progress" | "done";

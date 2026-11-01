@@ -19,7 +19,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeactivatedLabel } from "@/components/deactivated-label";
+import { YouLabel } from "@/components/you-label";
 import { initials } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Member, ProjectRole, User } from "@/lib/types";
 
 const roleLabel: Record<ProjectRole, string> = {
@@ -113,7 +116,12 @@ export function TeamSection({
             <li key={m.userId} className="flex items-center gap-3 px-4 py-3">
               <span
                 aria-hidden
-                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                  m.user.deactivatedAt
+                    ? "border border-dashed border-ink-muted text-ink-muted"
+                    : "bg-ink text-white",
+                )}
               >
                 {initials(m.user.name)}
               </span>
@@ -121,9 +129,8 @@ export function TeamSection({
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {m.user.name}
-                  {m.userId === meId && (
-                    <span className="font-normal text-ink-muted"> (you)</span>
-                  )}
+                  {m.userId === meId && <YouLabel />}
+                  {m.user.deactivatedAt && <DeactivatedLabel />}
                 </p>
                 <p className="truncate text-xs text-ink-muted">
                   {m.user.email}
@@ -172,7 +179,10 @@ export function TeamSection({
           </DialogHeader>
 
           <ul className="-mx-2 flex max-h-80 flex-col overflow-y-auto">
-            {users.map((u) => {
+            {/* Devre dışı biri yeni bir takıma katılamaz (API 400 döner); seçenek olarak hiç gösterilmez. */}
+            {users
+              .filter((u) => !u.deactivatedAt)
+              .map((u) => {
               const isMember = members.some((m) => m.userId === u.id);
 
               return (
@@ -201,7 +211,7 @@ export function TeamSection({
                   )}
                 </li>
               );
-            })}
+              })}
           </ul>
 
           {error && (

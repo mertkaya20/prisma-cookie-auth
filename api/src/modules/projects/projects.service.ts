@@ -175,6 +175,10 @@ export const addMember = async (
     throw new AppError(400, "USER_NOT_FOUND", "User not found");
   }
 
+  if (targetUser.deactivatedAt) {
+    throw new AppError(400, "USER_DEACTIVATED", "This user is deactivated");
+  }
+
   try {
     return await db.projectMember.create({
       data: {

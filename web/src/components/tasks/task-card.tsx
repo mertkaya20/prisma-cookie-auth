@@ -75,11 +75,24 @@ export function TaskCard({
                   {people.slice(0, MAX_AVATARS).map((person) => (
                     <li
                       key={person.id}
-                      title={person.name}
-                      className="flex size-6 items-center justify-center rounded-full bg-ink text-[0.625rem] font-semibold text-white"
+                      title={
+                        person.deactivatedAt
+                          ? `${person.name} (deactivated)`
+                          : person.name
+                      }
+                      className={cn(
+                        "flex size-6 items-center justify-center rounded-full text-[0.625rem] font-semibold",
+                        // Devre dışı kişi soluk: hâlâ atanmış ama artık çalışmıyor.
+                        person.deactivatedAt
+                          ? "border border-dashed border-ink-muted text-ink-muted"
+                          : "bg-ink text-white",
+                      )}
                     >
                       <span aria-hidden>{initials(person.name)}</span>
-                      <span className="sr-only">{person.name}</span>
+                      <span className="sr-only">
+                        {person.name}
+                        {person.deactivatedAt && " (deactivated)"}
+                      </span>
                     </li>
                   ))}
                   {hidden > 0 && (

@@ -252,6 +252,7 @@ export default function TaskPage() {
           <AssigneesSection
             assignees={task.assignees}
             members={membersQuery.data?.members ?? []}
+            meId={me.data?.user.id}
             canAssign={canAssign}
             onAssign={(userId) => assign.mutate(userId)}
             onUnassign={(userId) => unassign.mutate(userId)}
