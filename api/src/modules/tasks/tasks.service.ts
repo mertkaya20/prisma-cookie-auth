@@ -139,6 +139,7 @@ export const addAssignee = async (
 
   const member = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId: project.id, userId: assigneeId } },
+    include: { user: { select: { deactivatedAt: true } } },
   });
 
   if (!member) {
@@ -147,6 +148,10 @@ export const addAssignee = async (
       "ASSIGNEE_NOT_IN_PROJECT",
       "User is not a member of this project",
     );
+  }
+
+  if (member.user.deactivatedAt) {
+    throw new AppError(400, "USER_DEACTIVATED", "This user is deactivated");
   }
 
   try {

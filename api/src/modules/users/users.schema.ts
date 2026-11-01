@@ -12,3 +12,7 @@ export const createUserSchema = z.object({
   password: passwordSchema,
   role: z.enum([Role.owner, Role.member]).default(Role.member),
 });
+
+export const userIdParamsSchema = z.object({
+  id: z.uuid(),
+});

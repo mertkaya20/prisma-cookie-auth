@@ -50,20 +50,21 @@ model Organization {
 }
 
 model User {
-  id             String   @id @default(uuid(7)) @db.Uuid
-  passwordHash   String   @map("password_hash")
+  id             String    @id @default(uuid(7)) @db.Uuid
+  passwordHash   String    @map("password_hash")
   name           String
-  email          String   @unique
+  email          String    @unique
   role           Role
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  organizationId String   @map("organization_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  organizationId String    @map("organization_id") @db.Uuid
+  deactivatedAt  DateTime? @map("deactivated_at")
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  sessions     Session[]
-  createdTasks Task[]
-  assignments  TaskAssignee[]
-  comments     Comment[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sessions       Session[]
+  createdTasks   Task[]
+  assignments    TaskAssignee[]
+  comments       Comment[]
   projectMembers ProjectMember[]
 
   // organizationId ile başladığı için "organizasyonun kullanıcıları" aramasını da karşılar;
@@ -92,9 +93,9 @@ model Project {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   tasks        Task[]
-  members ProjectMember[]
+  members      ProjectMember[]
 
   @@unique([organizationId, name])
   @@unique([organizationId, id])
@@ -102,10 +103,10 @@ model Project {
 }
 
 model ProjectMember {
-  organizationId String @map("organization_id") @db.Uuid
-  projectId String @map("project_id") @db.Uuid
-  userId String @map("user_id") @db.Uuid
-  role ProjectRole @default(contributor)
+  organizationId String      @map("organization_id") @db.Uuid
+  projectId      String      @map("project_id") @db.Uuid
+  userId         String      @map("user_id") @db.Uuid
+  role           ProjectRole @default(contributor)
 
   project Project @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade)
 
@@ -115,7 +116,6 @@ model ProjectMember {
   @@index([organizationId, userId])
   @@map("project_members")
 }
-
 
 model Task {
   id             String     @id @default(uuid(7)) @db.Uuid

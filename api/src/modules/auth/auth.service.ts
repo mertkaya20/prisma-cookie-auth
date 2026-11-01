@@ -22,6 +22,7 @@ export const userSelect = {
   name: true,
   role: true,
   organizationId: true,
+  deactivatedAt: true,
 } as const;
 
 const BCRYPT_COST = 12;
@@ -41,6 +42,7 @@ const toPublicUser = (user: PublicUserFields) => ({
   name: user.name,
   role: user.role,
   organizationId: user.organizationId,
+  deactivatedAt: user.deactivatedAt,
 });
 
 const hashToken = (token: string) =>
@@ -123,6 +125,10 @@ export const login = async (input: LoginInput) => {
     );
   }
 
+  if (user.deactivatedAt) {
+    throw new AppError(403, "USER_DEACTIVATED", "This account is deactivated");
+  }
+
   const token = await createSession(user.id);
 
   return {
@@ -163,6 +169,8 @@ export const getSessionUser = async (token: string) => {
   }
 
   if (session.user.organization.status === "suspended") return null;
+
+  if (session.user.deactivatedAt) return null;
 
   return toPublicUser(session.user);
 };
