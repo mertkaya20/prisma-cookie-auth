@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Logo: StatusRing'in "in progress" hali. Koyu sekme çubuğunda görünsün diye açık renge döner. -->
+  <style>
+    .ring { fill: none; stroke: #1B2420; }
+    .half { fill: #1B2420; }
+    @media (prefers-color-scheme: dark) {
+      .ring { stroke: #F5F6F4; }
+      .half { fill: #F5F6F4; }
+    }
+  </style>
+  <circle class="ring" cx="8" cy="8" r="6.25" stroke-width="1.5" />
+  <path class="half" d="M8 3.75 A4.25 4.25 0 0 1 8 12.25 Z" />
+</svg>
