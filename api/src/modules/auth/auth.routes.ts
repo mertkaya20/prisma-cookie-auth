@@ -3,6 +3,7 @@ import * as authController from "./auth.controller.js";
 import { requireAuth } from "./auth.middleware.js";
 import {
   changePasswordLimiter,
+  demoLimiter,
   loginLimiter,
   registerLimiter,
 } from "../../shared/middleware/rate-limit.middleware.js";
@@ -15,6 +16,8 @@ authRouter.use((_req, res, next) => {
 });
 
 authRouter.post("/register", registerLimiter, authController.register);
+
+authRouter.post("/demo", demoLimiter, authController.demo);
 
 authRouter.post("/login", loginLimiter, authController.login);
 

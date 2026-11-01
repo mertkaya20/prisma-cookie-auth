@@ -31,6 +31,13 @@ export const registerLimiter = rateLimit({
   ...byIp,
 });
 
+export const demoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  ...commonOptions,
+  ...byIp,
+});
+
 export const changePasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
